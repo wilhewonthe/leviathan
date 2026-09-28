@@ -1198,12 +1198,15 @@ function hideModel(){
   // Materials are SHARED between meshes (one M.shell across dozens of parts), so the
   // save/restore must be keyed on unique materials. Saving per-mesh captures opacity 0
   // for every mesh after the first and the restore then leaves the model invisible.
+  // Line/Points matter too: the mast guy wires are Line objects and otherwise stay
+  // floating in mid-air once the coach is hidden.
   const mats = new Set();
   const meshes = [];
   coach.traverse(o => {
-    if (!o.isMesh || !o.material) return;
+    if (!o.material) return;
+    if (!o.isMesh && !o.isLine && !o.isPoints) return;
     mats.add(o.material);
-    meshes.push({ mesh:o, castShadow:o.castShadow });
+    if (o.isMesh) meshes.push({ mesh:o, castShadow:o.castShadow });
   });
   modelMatState = { mats:[], meshes };
   for (const m of mats){
