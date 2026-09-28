@@ -136,6 +136,7 @@
   <button class="b on" id="bFlow">⚡ Energy flow</button>
   <button class="b" id="bShutters">▤ Deploy shutters</button>
   <button class="b on" id="bMast">⌇ Stow mast</button>
+  <button class="b" id="bScan">◉ Scan</button>
   <div class="seg">
     <button class="b" data-view="coach">Coach</button>
     <button class="b" data-view="basement">Basement</button>
@@ -159,8 +160,9 @@
 
 <script type="importmap">
 { "imports": {
-    "three": "https://unpkg.com/three@0.169.0/build/three.module.js",
-    "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/"
+    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+    "@sparkjsdev/spark": "https://sparkjs.dev/releases/spark/2.2.0/spark.module.js"
 } }
 </script>
 
@@ -177,6 +179,23 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const WIKI = {
   meta: { vessel:"2006 Alfa See Ya 37FD", length_ft:38, beam_ft:8.5, height_ft:13,
           chassis:"Freightliner XC", wiki:"~/leviathan-wiki", updated:"2026-09-28" },
+
+  /* PHOTOREAL SCAN SLOT — "someday" path, wired and tested, waiting on a capture.
+     When the coach has been filmed: run the capture through a splat trainer
+     (see CAPTURE.md), drop the .spz next to index.html, and set url below.
+     Nothing else needs to change — photoreal mode swaps the visuals for the scan
+     while everything stays clickable.
+       url   : path or absolute URL to the .spz/.ply/.splat/.ksplat/.sog
+       demo  : a public splat used to prove the pipeline; only shown when
+               ?photoreal=1 is passed AND url is still null.
+       fit   : a raw photogrammetry splat arrives at arbitrary scale and
+               orientation. Dial these in once, then write them down here.
+               rot is degrees [x,y,z]; pos is scene units (1 unit = 1 foot). */
+  splat: {
+    url: null,
+    demo: "https://sparkjs.dev/assets/splats/butterfly.spz",
+    fit: { scale: 1.0, pos: [0, 0, 0], rot: [0, 0, 0] }
+  },
 
   components: [
     { id:"panels", label:"Roof solar array", group:"Generation", status:"open",
@@ -766,12 +785,15 @@ const ray = new THREE.Raycaster();
 const ptr = new THREE.Vector2();
 const tip = document.getElementById('tip');
 let hovered = null;
+let currentId = null;   // the component whose panel is open (used by scan-mode beacons)
 
 function hitAt(ev){
   ptr.x = (ev.clientX / innerWidth) * 2 - 1;
   ptr.y = -(ev.clientY / innerHeight) * 2 + 1;
   ray.setFromCamera(ptr, camera);
-  const hits = ray.intersectObjects(pickable, true);
+  // beacons are raycast alongside the model so hotspots stay hittable in scan mode
+  const objs = (beaconGrp && beaconGrp.visible) ? pickable.concat(beaconGrp.children) : pickable;
+  const hits = ray.intersectObjects(objs, true);
   for (const h of hits){
     let o = h.object;
     while (o && !o.userData.component) o = o.parent;
@@ -879,6 +901,7 @@ function dashSection(id){
 function select(id){
   const c = WIKI.components.find(x => x.id === id);
   if (!c) return;
+  currentId = id;
   document.getElementById('pk').textContent = c.group;
   document.getElementById('pt').textContent = c.label;
   const st = document.getElementById('ps');
@@ -1051,7 +1074,9 @@ updateClock();
    LOOP
    ========================================================================== */
 const clock = new THREE.Clock();
-let scrollAccum = 0;
+// per-frame hooks registered by optional modules (photoreal etc.) so the core loop
+// never needs to know about them
+const FRAME_HOOKS = [];
 
 function animate(){
   requestAnimationFrame(animate);
@@ -1096,6 +1121,8 @@ function animate(){
     if (flight.k >= 1) flight = null;
   }
 
+  for (const h of FRAME_HOOKS) h(dt, t);
+
   controls.update();
   renderer.render(scene, camera);
 }
@@ -1107,9 +1134,237 @@ addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight);
 });
 
+/* ============================================================================
+   PHOTOREAL SCAN MODE  (additive — the working panel must survive its failure)
+
+   A Gaussian splat is surface, not structure: it looks real but knows nothing
+   about what a component *is*. So the scan supplies the visuals and the existing
+   procedural model stays in the scene at zero opacity as the click layer, with
+   beacons marking each hotspot's position. Spark and three stay isolated from the
+   core path: the import is dynamic, the whole thing is try/caught, and a failure
+   leaves the normal model exactly as it was.
+   ========================================================================== */
+let photoreal = false;
+let sparkRenderer = null, splatMesh = null, beaconGrp = null;
+let photorealBusy = false;
+let splatReady = false, splatLoadMs = null;
+const compBounds = {};
+let modelMatState = null;   // saved material state so hide/restore is lossless
+
+function componentBounds(){
+  coach.updateMatrixWorld(true);
+  for (const root of pickable){
+    const id = root.userData.component;
+    if (!id) continue;
+    const b = new THREE.Box3().setFromObject(root);
+    if (b.isEmpty()) continue;
+    if (compBounds[id]) compBounds[id].union(b); else compBounds[id] = b.clone();
+  }
+}
+
+function buildBeacons(){
+  if (beaconGrp) return beaconGrp;
+  componentBounds();
+  beaconGrp = new THREE.Group();
+  beaconGrp.visible = false;
+  scene.add(beaconGrp);
+  for (const id in compBounds){
+    const c = compBounds[id].getCenter(new THREE.Vector3());
+    const sz = compBounds[id].getSize(new THREE.Vector3()).length();
+    const r = Math.max(0.8, Math.min(3.0, sz * 0.16));
+    const mat = new THREE.MeshBasicMaterial({ color:0x3fd0c9, transparent:true, opacity:0.9,
+      depthTest:false, blending:THREE.AdditiveBlending });
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(r, 0.07, 8, 32), mat);
+    ring.position.copy(c); ring.rotation.x = -Math.PI/2;
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, r*0.55, 6), mat);
+    stem.position.copy(c);
+    for (const m of [ring, stem]){ m.userData.component = id; m.userData.beacon = true; m.renderOrder = 999; }
+    beaconGrp.add(ring, stem);
+  }
+  FRAME_HOOKS.push((dt, t) => {
+    if (!beaconGrp.visible) return;
+    const pulse = 1 + Math.sin(t * 2.2) * 0.06;
+    for (const o of beaconGrp.children){
+      const active = o.userData.component === (hovered || currentId);
+      o.scale.setScalar(pulse * (active ? 1.35 : 1));
+      o.material.opacity = active ? 1.0 : 0.72;
+    }
+  });
+  return beaconGrp;
+}
+
+function hideModel(){
+  if (modelMatState) return;
+  // Materials are SHARED between meshes (one M.shell across dozens of parts), so the
+  // save/restore must be keyed on unique materials. Saving per-mesh captures opacity 0
+  // for every mesh after the first and the restore then leaves the model invisible.
+  const mats = new Set();
+  const meshes = [];
+  coach.traverse(o => {
+    if (!o.isMesh || !o.material) return;
+    mats.add(o.material);
+    meshes.push({ mesh:o, castShadow:o.castShadow });
+  });
+  modelMatState = { mats:[], meshes };
+  for (const m of mats){
+    modelMatState.mats.push({ mat:m, transparent:m.transparent, opacity:m.opacity,
+                              depthWrite:m.depthWrite });
+    // opacity 0 keeps the mesh raycastable — visible=false would remove it from picking
+    const changed = (m.transparent !== true);
+    m.transparent = true;
+    m.opacity = 0;
+    m.depthWrite = false;
+    // `transparent` is compiled into the shader as an OPAQUE define. Flipping it without
+    // needsUpdate reuses the cached opaque program, which discards alpha outright and
+    // renders the mesh fully opaque — the model visibly refuses to hide.
+    if (changed) m.needsUpdate = true;
+  }
+  for (const s of meshes) s.mesh.castShadow = false;  // invisible meshes still write shadows
+}
+function restoreModel(){
+  if (!modelMatState) return;
+  for (const s of modelMatState.mats){
+    const changed = (s.mat.transparent !== s.transparent);
+    s.mat.transparent = s.transparent;
+    s.mat.opacity = s.opacity;
+    s.mat.depthWrite = s.depthWrite;
+    if (changed) s.mat.needsUpdate = true;
+  }
+  for (const s of modelMatState.meshes) s.mesh.castShadow = s.castShadow;
+  modelMatState = null;
+}
+
+function scanToast(msg, kind){
+  let el = document.getElementById('scanToast');
+  if (!el){
+    el = document.createElement('div');
+    el.id = 'scanToast';
+    el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:56px;z-index:40;'
+      + 'background:rgba(8,11,15,.95);border:1px solid #1f2b38;border-radius:7px;padding:9px 14px;'
+      + 'font-family:var(--mono);font-size:11.5px;max-width:80vw;text-align:center';
+    document.body.appendChild(el);
+  }
+  el.style.color = kind === 'err' ? 'var(--rd)' : kind === 'warn' ? 'var(--am)' : 'var(--cy)';
+  el.innerHTML = msg;
+  el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.display = 'none'; }, kind === 'err' ? 9000 : 5000);
+}
+
+async function setPhotoreal(on, allowDemo){
+  if (photorealBusy) return;
+  const btn = document.getElementById('bScan');
+  // never capture or restore material state while a hover clone is live
+  if (hovered){ setHighlight(hovered, false); hovered = null; }
+
+  if (!on){
+    photoreal = false;
+    if (sparkRenderer) sparkRenderer.visible = false;
+    if (splatMesh) splatMesh.visible = false;
+    if (beaconGrp) beaconGrp.visible = false;
+    restoreModel();
+    btn.classList.remove('on');
+    btn.textContent = '◉ Scan';
+    return;
+  }
+
+  const configured = WIKI.splat && WIKI.splat.url;
+  const url = configured || (allowDemo ? (WIKI.splat && WIKI.splat.demo) : null);
+  if (!url){
+    scanToast('No scan yet. Film the coach, train a splat, drop it next to '
+      + 'index.html and set <b>WIKI.splat.url</b> — see CAPTURE.md.', 'warn');
+    return;
+  }
+
+  if (!splatMesh){
+    photorealBusy = true;
+    btn.textContent = '◉ Loading…';
+    try {
+      const mod = await import('@sparkjsdev/spark');
+      if (!mod || !mod.SparkRenderer || !mod.SplatMesh) throw new Error('spark: unexpected exports');
+      sparkRenderer = new mod.SparkRenderer({ renderer });
+      scene.add(sparkRenderer);
+      splatMesh = new mod.SplatMesh({ url });
+      splatMesh.visible = false;
+      const fit = (WIKI.splat && WIKI.splat.fit) || { scale:1, pos:[0,0,0], rot:[0,0,0], flipY:true };
+      splatMesh.scale.setScalar(fit.scale);
+      splatMesh.position.set(...fit.pos);
+      // Sparks's own example applies this Y-flip for photogrammetry output; splats
+      // trained from phone video come out upsidedown without it.
+      if (fit.flipY !== false) splatMesh.quaternion.set(1, 0, 0, 0);
+      splatMesh.rotateX(THREE.MathUtils.degToRad(fit.rot[0] || 0));
+      splatMesh.rotateY(THREE.MathUtils.degToRad(fit.rot[1] || 0));
+      splatMesh.rotateZ(THREE.MathUtils.degToRad(fit.rot[2] || 0));
+      scene.add(splatMesh);
+      // Spark hooks into renderer.render() itself — there is no per-frame update() call
+      // to make. Crucially this must NOT be awaited: activation cannot block on the
+      // splat, or a slow/missing file leaves scan mode stuck at "Loading…" forever.
+      if (splatMesh.initialized && typeof splatMesh.initialized.then === 'function'){
+        const t0 = performance.now();
+        splatMesh.initialized
+          .then(() => { splatReady = true; splatLoadMs = Math.round(performance.now() - t0); })
+          .catch(e => window.__errors.push('splat load: ' + ((e && e.message) || e)));
+      } else {
+        splatReady = true;   // no load signal exposed; assume the file streams in
+      }
+    } catch (e){
+      const msg = (e && e.message) || String(e);
+      window.__errors.push('photoreal: ' + msg);
+      photorealBusy = false;
+      btn.textContent = '◉ Scan';
+      scanToast('Scan mode unavailable: ' + msg + '<br>Spark could not load (offline or blocked). '
+        + 'The diagram model still works.', 'err');
+      return;
+    }
+    photorealBusy = false;
+  }
+
+  photoreal = true;
+  hideModel();
+  buildBeacons().visible = true;
+  splatMesh.visible = true;
+  splatMesh.position.set(...((WIKI.splat && WIKI.splat.fit && WIKI.splat.fit.pos) || [0,0,0]));
+  btn.classList.add('on');
+  btn.textContent = '◉ Scan on';
+  scanToast(configured
+    ? 'Photoreal scan loaded' + (splatLoadMs != null ? ' in ' + splatLoadMs + ' ms' : '')
+      + ' — click the beacons for the same spec panels.'
+    : '<b>DEMO SPLAT</b> (a public sample, not the coach). This proves the pipeline end to end. '
+      + 'Your own scan drops in at <b>WIKI.splat.url</b>.', configured ? 'ok' : 'warn');
+
+  // a scan that never arrives would otherwise leave empty beacons over nothing
+  if (!splatReady){
+    setTimeout(() => {
+      if (photoreal && !splatReady){
+        scanToast('Scan file has not loaded yet (' + ((WIKI.splat && WIKI.splat.url) || 'demo')
+          + '). Check the path, or that the file is served alongside index.html. '
+          + 'Beacons still work for clicking.', 'warn');
+      }
+    }, 12000);
+  }
+}
+document.getElementById('bScan').onclick = () => setPhotoreal(!photoreal, false);
+
 // expose a tiny API so the wiki/scripts can drive the panel
-window.Leviathan = { select, WIKI, scene, camera, controls,
-  setLive(d){ LIVE = Object.assign(LIVE, d); updateClock(); } };
+window.Leviathan = { select, WIKI, scene, camera, controls, renderer, coach,
+  setLive(d){ LIVE = Object.assign(LIVE, d); updateClock(); },
+  setPhotoreal, isPhotoreal: () => photoreal,
+  beacons: () => (beaconGrp ? beaconGrp.children.length : 0),
+  hotspots: () => { if (!Object.keys(compBounds).length) componentBounds();
+                    return Object.keys(compBounds).length; },
+  // scan-mode introspection: class names are unreliable in a bundled ESM build, so the
+  // panel reports its own state instead of callers sniffing constructor.name
+  scanInfo: () => ({
+    spark: !!sparkRenderer,
+    splat: !!splatMesh,
+    visible: !!(splatMesh && splatMesh.visible),
+    ready: splatReady,
+    loadMs: splatLoadMs,
+    url: (WIKI.splat && WIKI.splat.url) || null,
+    usingDemo: !(WIKI.splat && WIKI.splat.url),
+    hidden: modelMatState ? modelMatState.mats.length : 0,
+    fit: (WIKI.splat && WIKI.splat.fit) || null
+  }) };
 
 /* deep links — shareable URLs into a specific component or view:
      ?open=bank           open a component's panel
@@ -1127,6 +1382,9 @@ if (q.get('shutters') === '1'){ bShut.click(); }
 if (q.get('night') === '1'){ bDay.click(); }
 if (q.get('flow') === '0'){ bFlow.click(); }
 if (q.get('open')) select(q.get('open'));
+// ?photoreal=1 turns on scan mode, falling back to the public demo splat so the
+// pipeline can be exercised before a real capture exists
+if (q.get('photoreal') === '1') setPhotoreal(true, true);
 </script>
 </body>
 </html>

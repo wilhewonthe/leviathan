@@ -20,6 +20,8 @@ No build step, no dependencies to install — three.js loads from a CDN. Open
 - **Coach / Basement / Whole rig** — camera presets. The basement view reveals the bank,
   inverter, compute node, genset and 12V island inside the bay.
 - **Power ledger** — the working energy balance, computed from stated assumptions.
+- **Scan** — photoreal mode. Swap the diagram for a real Gaussian-splat capture of the
+  coach, with the same components still clickable. See *Photoreal scan mode* below.
 
 ### Deep links (shareable, and handy on a phone)
 
@@ -27,6 +29,7 @@ No build step, no dependencies to install — three.js loads from a CDN. Open
 ?open=bank                  open a component's panel directly
 ?view=basement              start in a camera preset
 ?mast=0&shutters=1&night=1  set the toggles
+?photoreal=1                start in scan mode
 ```
 
 Full list of `?open=` ids: `panels`, `shutters`, `mast`, `genset`, `bank`, `inverter`,
@@ -59,6 +62,63 @@ You can also drive it from the console or another page:
 Leviathan.select('bank');          // open a component
 Leviathan.setLive({ metrics: { soc: 78 } });
 ```
+
+## Photoreal scan mode
+
+The diagram model is a blockout: honest for layout, useless for *what it looks like*.
+Scan mode replaces the visuals with a real capture, without giving up the interactive layer.
+
+The insight that makes it work: **a Gaussian splat is surface, not structure.** It looks like
+a photograph but knows nothing about what a component *is* — you can't click a cloud of
+points and get a spec sheet, and you can't splat the inside of a sealed basement bay at all.
+So the two layers do different jobs:
+
+| layer | provides | why |
+|---|---|---|
+| the splat | what the rig looks like | captured light, real surfaces |
+| the diagram model | what everything *is* | stays clickable at zero opacity, so the 11 spec panels keep working |
+| the beacons | where to click | 22 markers at each component's real position, over the splat |
+
+Turn it on and the model drops to `opacity: 0` — still in the scene, still raycastable, just
+invisible — and cyan beacons appear at each component's position. Clicking a beacon opens
+exactly the same panel it always did.
+
+This also solves a problem no amount of rendering fidelity could: **you cannot photograph
+hardware you haven't bought.** Only the shell and the fitted gear can be scanned. The bank,
+the inverter, the genset and the basement interior have no physical counterpart yet, so the
+diagram stays the right answer for them regardless.
+
+### Turning it on
+
+The slot lives in the `WIKI` block:
+
+```js
+splat: {
+  url: null,                 // e.g. "alfa.spz" — your capture, next to index.html
+  demo: "https://sparkjs.dev/assets/splats/butterfly.spz",
+  fit: { scale: 1.0, pos: [0,0,0], rot: [0,0,0], flipY: true }
+}
+```
+
+Until `url` is set, `?photoreal=1` loads the public demo splat and labels it as such, so the
+pipeline can be exercised end to end before you've filmed anything. **`CAPTURE.md`** is the
+capture and alignment procedure.
+
+`fit` exists because a raw splat arrives at arbitrary scale and orientation. The scene is in
+feet (38 × 8.5 × 13), so `scale` is the first knob, then `rot` in degrees, then `pos`. The
+beacons double as the alignment reference — when a beacon lands on the corresponding part of
+the splat, `fit` is right.
+
+### Why it can't break the panel
+
+Spark is loaded with a **dynamic import inside a try/catch**, and nothing in the core path
+awaits it. If it's offline, blocked, or the file is missing, the diagram model is untouched
+and the button reports why. Activation never blocks on the splat either — the model hides and
+the beacons appear immediately, and a scan that never arrives warns after 12 seconds rather
+than leaving scan mode stuck loading.
+
+Renderer: [Spark](https://sparkjs.dev) (World Labs, MIT) — the maintained successor to
+mkkellogg's viewer, which its own author now points people away from.
 
 ## The wiki
 
@@ -106,4 +166,5 @@ rather than a space question.
 - Press **Power ledger →** to see all assumptions and what would replace each one with a
   measured value (PVWatts for the site's real sun hours, NASA POWER for wind).
 - The model is a deliberate low-poly blockout built from the plan's own dimensions: it is
-  a diagram you can click, not a render.
+  a diagram you can click, not a render. For the photoreal view, see **Photoreal scan mode**
+  and `CAPTURE.md`.
