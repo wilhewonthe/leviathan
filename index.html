@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Operation Leviathan — Alfa See Ya 37FD</title>
+<script>
+  // diagnostics: any uncaught error or failed module import is recorded here so the
+  // panel can be verified headlessly (and so a broken CDN is visible, not silent).
+  window.__errors = [];
+  addEventListener('error', e => {
+    window.__errors.push(String(e.message || e.error || 'error') +
+      (e.filename ? ' @ ' + e.filename + ':' + e.lineno : ''));
+  }, true);
+  addEventListener('unhandledrejection', e => {
+    window.__errors.push('unhandled rejection: ' + String(e.reason));
+  });
+</script>
+<style>
+  :root{
+    --bg:#0b0f14; --panel:#121821; --panel2:#0e141c; --line:#1f2b38;
+    --txt:#d7e2ee; --dim:#7d8fa3; --cy:#3fd0c9; --am:#f5b544; --rd:#e2604a; --gr:#6fbf73;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:var(--sans)}
+  #stage{position:fixed;inset:0}
+  canvas{display:block}
+
+  /* ---------- top bar ---------- */
+  #bar{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-items:center;gap:8px;
+       padding:0 14px;background:linear-gradient(180deg,rgba(11,15,20,.96),rgba(11,15,20,.72));
+       border-bottom:1px solid var(--line);backdrop-filter:blur(8px);z-index:20;overflow-x:auto}
+  #bar .brand{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--cy);
+       white-space:nowrap;font-weight:600}
+  #bar .brand small{display:block;color:var(--dim);letter-spacing:.06em;font-size:10px;text-transform:none}
+  #bar .sp{flex:1}
+  button.b{background:var(--panel);border:1px solid var(--line);color:var(--txt);font:inherit;
+       font-size:12px;padding:7px 11px;border-radius:6px;cursor:pointer;white-space:nowrap;transition:.14s}
+  button.b:hover{border-color:var(--cy);color:var(--cy)}
+  button.b.on{background:#16302f;border-color:var(--cy);color:var(--cy)}
+  .seg{display:flex;gap:0}
+  .seg button.b{border-radius:0}
+  .seg button.b:first-child{border-radius:6px 0 0 6px}
+  .seg button.b:last-child{border-radius:0 6px 6px 0;border-left:0}
+
+  /* ---------- side panel ---------- */
+  #panel{position:fixed;top:52px;right:0;bottom:0;width:400px;max-width:92vw;background:var(--panel);
+      border-left:1px solid var(--line);z-index:15;display:flex;flex-direction:column;
+      transform:translateX(101%);transition:transform .3s cubic-bezier(.4,0,.2,1);overflow:hidden}
+  #panel.open{transform:none}
+  #ph{padding:16px 18px 13px;border-bottom:1px solid var(--line);background:var(--panel2)}
+  #ph .kick{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+  #ph h2{margin:5px 0 0;font-size:19px;line-height:1.25}
+  #ph .status{display:inline-block;margin-top:9px;font-family:var(--mono);font-size:10px;
+      padding:3px 8px;border-radius:99px;border:1px solid var(--line);color:var(--dim)}
+  #ph .status.settled{color:var(--gr);border-color:#25452b}
+  #ph .status.open{color:var(--am);border-color:#4a3a1c}
+  #ph .status.contested{color:var(--rd);border-color:#4d2a24}
+  #close{position:absolute;top:60px;right:14px;background:none;border:0;color:var(--dim);
+      font-size:22px;cursor:pointer;line-height:1;z-index:16}
+  #close:hover{color:var(--txt)}
+  #pbody{flex:1;overflow-y:auto;padding:16px 18px 28px;font-size:13px;line-height:1.6}
+  #pbody::-webkit-scrollbar{width:9px}
+  #pbody::-webkit-scrollbar-thumb{background:#243243;border-radius:9px}
+  #pbody h3{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--cy);
+      margin:20px 0 8px;font-weight:600}
+  #pbody h3:first-child{margin-top:0}
+  #pbody p{margin:0 0 10px;color:#bccbd9}
+  #pbody ul{margin:0 0 10px;padding-left:17px;color:#bccbd9}
+  #pbody li{margin-bottom:5px}
+  .spec{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.5px}
+  .spec td{padding:6px 0;border-bottom:1px solid var(--line);vertical-align:top}
+  .spec td:first-child{color:var(--dim);width:44%;padding-right:10px}
+  .spec td:last-child{color:var(--txt)}
+  .note{border-left:2px solid var(--am);background:#1a1509;padding:9px 11px;border-radius:0 5px 5px 0;
+      margin:0 0 11px;font-size:12px;color:#e8d5a8}
+  .note.danger{border-color:var(--rd);background:#1c110e;color:#f0c4bb}
+  .note.ok{border-color:var(--gr);background:#0f1a12;color:#c3e3c7}
+  .wiki{font-family:var(--mono);font-size:10.5px;color:var(--dim);word-break:break-all}
+  .live{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;
+      padding:6px 0;border-bottom:1px solid var(--line)}
+  .live span:last-child{color:var(--cy)}
+  .live span:last-child.stale{color:var(--dim)}
+  #dash{margin-top:10px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#000}
+  #dash iframe{width:100%;height:230px;border:0;display:block;background:#0b0f14}
+  #dash .ph{padding:22px 14px;text-align:center;color:var(--dim);font-size:12px}
+  .row{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap}
+  a.btn{display:inline-block;background:var(--panel2);border:1px solid var(--line);color:var(--cy);
+      font-family:var(--mono);font-size:11px;padding:6px 10px;border-radius:5px;text-decoration:none}
+  a.btn:hover{border-color:var(--cy)}
+
+  /* ---------- ledger overlay ---------- */
+  #ledger{position:fixed;inset:52px 0 0 0;background:rgba(8,11,15,.97);z-index:18;display:none;
+      overflow-y:auto;padding:26px}
+  #ledger.open{display:block}
+  #ledger .wrap{max-width:940px;margin:0 auto}
+  #ledger h1{font-size:20px;margin:0 0 4px}
+  #ledger .sub{color:var(--dim);font-size:12px;margin-bottom:22px}
+  #ledger h3{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--cy);margin:26px 0 9px}
+  table.lg{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+  table.lg th{text-align:left;color:var(--dim);font-weight:400;padding:7px 9px;border-bottom:1px solid var(--line);
+      font-size:10.5px;letter-spacing:.08em;text-transform:uppercase}
+  table.lg td{padding:7px 9px;border-bottom:1px solid var(--line)}
+  table.lg tr:hover td{background:#101822}
+  .neg{color:var(--rd)} .pos{color:var(--gr)} .num{text-align:right}
+  .warn{border-left:2px solid var(--rd);background:#1c110e;padding:13px 15px;border-radius:0 6px 6px 0;
+      margin:16px 0;font-size:13px;color:#f0c4bb}
+
+  /* ---------- hud ---------- */
+  #hint{position:fixed;bottom:14px;left:14px;font-family:var(--mono);font-size:11px;color:var(--dim);
+      background:rgba(11,15,20,.8);border:1px solid var(--line);padding:7px 11px;border-radius:6px;z-index:14}
+  #tip{position:fixed;pointer-events:none;background:rgba(8,11,15,.94);border:1px solid var(--cy);
+      color:var(--txt);font-family:var(--mono);font-size:11px;padding:4px 8px;border-radius:5px;
+      z-index:30;display:none;white-space:nowrap}
+  #clock{font-family:var(--mono);font-size:11px;color:var(--dim);white-space:nowrap;min-width:150px;text-align:right}
+  #clock b{color:var(--am);font-weight:400}
+  @media(max-width:720px){
+    #bar{height:auto;flex-wrap:wrap;padding:9px 10px;gap:6px}
+    #panel{top:0;width:100%;max-width:100%;padding-top:0}
+    #close{top:12px}
+    #ledger{inset:0;padding:16px}
+    #hint{display:none}
+  }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+
+<div id="bar">
+  <div class="brand">Operation Leviathan<small>Alfa See Ya 37FD · Panic Responsibly™</small></div>
+  <div class="sp"></div>
+  <button class="b" id="bDay">☀ Day</button>
+  <button class="b on" id="bFlow">⚡ Energy flow</button>
+  <button class="b" id="bShutters">▤ Deploy shutters</button>
+  <button class="b on" id="bMast">⌇ Stow mast</button>
+  <div class="seg">
+    <button class="b" data-view="coach">Coach</button>
+    <button class="b" data-view="basement">Basement</button>
+    <button class="b" data-view="rig">Whole rig</button>
+  </div>
+  <button class="b" id="bLedger">Power ledger</button>
+  <a class="b" id="bWiki" href="README.md#the-wiki" target="_blank" rel="noopener"
+     style="text-decoration:none;display:inline-block;line-height:1.1">Wiki ↗</a>
+  <div id="clock">gen <b>—</b> · load <b>—</b></div>
+</div>
+
+<div id="panel">
+  <button id="close" aria-label="Close">×</button>
+  <div id="ph"><div class="kick" id="pk">component</div><h2 id="pt">—</h2><div id="ps"></div></div>
+  <div id="pbody"></div>
+</div>
+
+<div id="ledger"><div class="wrap" id="ledgerBody"></div></div>
+<div id="hint">click a component · drag to orbit · scroll to zoom</div>
+<div id="tip"></div>
+
+<script type="importmap">
+{ "imports": {
+    "three": "https://unpkg.com/three@0.169.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ============================================================================
+   WIKI DATA — single source of truth.
+   Regenerate this block from ~/leviathan-wiki when the wiki changes.
+   Every component carries: spec (what it is), envelope (the not-fixed range),
+   notes (the reasoning worth keeping), wiki (the page of record).
+   ========================================================================== */
+const WIKI = {
+  meta: { vessel:"2006 Alfa See Ya 37FD", length_ft:38, beam_ft:8.5, height_ft:13,
+          chassis:"Freightliner XC", wiki:"~/leviathan-wiki", updated:"2026-09-28" },
+
+  components: [
+    { id:"panels", label:"Roof solar array", group:"Generation", status:"open",
+      spec:{ "Nominal":"3,000–3,600 W (unfixed by design)","Derated real":"≈75% of nameplate",
+             "Mount":"3M VHB 5952 + Sikaflex 252, zero roof penetrations","Roof fitted":"8 panels shown; 11–12 large fit physically" },
+      envelope:"Any panel whose footprint fits the assigned roof area and whose cold-Voc + Imp sit inside the controller window. Panel count is an OUTPUT of the design, not an input.",
+      notes:[ "The roof is clear because the A/C is in the basement — that is the enabling gift of this coach.",
+              "The transcript's '8 is the sweet spot' optimises for serviceability and the controller ceiling, not for the energy balance.",
+              "⚠️ Alfa See Ya fibreglass had a documented delamination problem. VHB transfers load into that skin — tap-test before bonding anything." ],
+      wiki:"entities/solar-array.md + entities/adhesive-mounting.md" },
+
+    { id:"shutters", label:"Bermuda solar shutters", group:"Generation", status:"open",
+      spec:{ "Concept":"Free-standing, wheeled, tiltable PV that docks to the sun-facing side",
+             "Functions":"Shade + generation + awning — three from one object",
+             "Attachment":"Un-affixed: no fasteners, no fibreglass loading","Blocker":"Wind uplift (the kite problem)" },
+      envelope:"3–4 deployable panels add ≈4–6 kWh/day at average sun AND cut solar gain before it enters the glass. Tilt is seasonal, not daily.",
+      notes:[ "This is the most inventive idea in the plan: it resolves area vs controller-ceiling vs shading in one object.",
+              "It is load-bearing, not a nice-to-have — without it the roof area alone cannot serve the load.",
+              "⚠️ 20 sq ft of flat panel on wheeled legs in a 35 mph gust is a land-yacht. Requires outriggers or water-ballast base. Not yet designed." ],
+      wiki:"entities/bermuda-solar-shutter.md" },
+
+    { id:"mast", label:"VAWT wind rig", group:"Generation", status:"open",
+      spec:{ "Turbine":"One vertical-axis turbine (not propeller)","Mast":"20–25 ft telescoping, in the Class IV hitch receiver",
+             "Isolation":"Thick rubber sleeve — decouples low-frequency hum from the chassis",
+             "Stability":"3-point guy wires to heavy earth anchors","Cut-in":"≈1.3 m/s (claimed)" },
+      envelope:"0.5–1.0 kWh/night realistic. Capacity factor for small wind at a decent site is 10–20%, and power scales with the CUBE of wind speed.",
+      notes:[ "Not on the roof: blade harmonics travel through a hollow fibreglass box, and a 13 ft rig presents a sail that would tear the mount out.",
+              "The hitch receiver is rated ~10,000 lb and is welded to the frame — all mechanical stress bypasses the fibreglass.",
+              "⚠️ A turbine CANNOT feed an all-in-one's solar port: no dump load means free-spin bearing destruction when the battery is full. Needs its own controller + resistive dump load.",
+              "The honest test before buying: NASA POWER wind data for the actual parking coordinates. If the site sits below cut-in most of the time, this is a sculpture." ],
+      wiki:"entities/vawt-windmaxxr-rig.md + concepts/wind-capacity-factor.md" },
+
+    { id:"genset", label:"10 kW diesel generator", group:"Backstop", status:"settled",
+      spec:{ "Output":"10 kW class, on the coach's own fuel tank","Role":"Automatic backstop at low SoC","Trigger":"Dry contact from the inverter/charger (~15% SoC)",
+             "Fuel":"≈0.5–1.0 gal/h" },
+      envelope:"Runs at its efficient point to recharge the bank to ~80%, then shuts down. Silence is the default state; noise is the exception.",
+      notes:[ "This is the third leg of the system — for this load profile the backstop is a diesel engine, not more renewables.",
+              "⚠️ It shares the vehicle's fuel tank. A long generator run can strand the coach — set a low-fuel interlock that reserves real driving range.",
+              "⚠️ CO and exhaust: any repositioning or extended run needs an explicit CO review. Detection in the living space is required, not optional.",
+              "A 10 kW diesel auto-starting at 03:00 is a social problem before it is a technical one. Consider quiet-hours constraints in the logic." ],
+      wiki:"entities/diesel-generator-10kw.md" },
+
+    { id:"bank", label:"48 V LiFePO4 bank", group:"Storage", status:"open",
+      spec:{ "Configuration":"4 × 48 V 300 Ah server-rack (native 48 V, never 12 V in series)",
+             "Capacity":"≈61.4 kWh (≈15.4 kWh per unit)","Weight":"≈1,100 lb total, ≈280 lb per unit",
+             "Placement":"Over the rear axles, in the basement bay","C-rate":"≈26 A at 1.25 kW — trivially inside spec. NOT the binding constraint." },
+      envelope:"15.4 kWh (entry, 4×12V-300Ah) to 61.4 kWh (Leviathan class). 61.4 kWh = 2.0 days at a 1.25 kW steady load, 1.6 days at 1.6 kW.",
+      notes:[ "Server-rack units with closed-loop BMS, NOT a DIY prismatic pack: potholes at highway speed plus loose busbars equals arc flash.",
+              "⚠️ LiFePO4 cannot be charged below 0 °C — the BMS blocks it to prevent permanent lithium plating. In an unheated bay, winter PV makes power you cannot store. Self-heating batteries should be a hard selection criterion.",
+              "⚠️ ~1,100 lb in one bay is a FLOOR-loading problem, not a chassis problem. Needs a welded steel cage tied to the frame plus a real axle-weight check.",
+              "Silver lining: the heaviest new mass sits low in the basement, which is favourable for centre of gravity." ],
+      wiki:"entities/target-48v-bank.md" },
+
+    { id:"inverter", label:"Inverter / charger brain", group:"Routing", status:"open",
+      spec:{ "Candidates":"Victron Quattro 48/10000 class vs EG4 18kPV class",
+             "Must do":"Invert · charge · transfer between two AC inputs · auto-start the genset · expose telemetry",
+             "Transfer":"<20 ms — IT equipment must not reboot","PowerAssist":"Supplements a weak pedestal from the battery instead of tripping breakers" },
+      envelope:"THE architecture fork: a capped all-in-one keeps the solar-input ceiling; a bare inverter/charger plus separate industrial MPPTs removes it entirely. This choice determines every downstream number.",
+      notes:[ "Telemetry is not optional — load-shedding scripts that gate GPU work on battery state are what make a 1.25 kW node viable on this generation budget.",
+              "Prefer local Modbus TCP / MQTT from a GX-class device over any cloud API: if the internet is down, the load-shedding logic must still work.",
+              "Two independent AC inputs (shore + generator) with automatic arbitration is exactly the architecture this rig needs." ],
+      wiki:"entities/inverter-charger-brain.md + comparisons/victron-vs-eg4.md" },
+
+    { id:"compute", label:"GPU compute node", group:"Load", status:"open",
+      spec:{ "Target":"4 × RTX 5070 class","Draw":"≈1,250 W with host (≈1,000 W GPUs)",
+             "Rejected":"4 × RTX 5090 — 2,600 W would empty the bank in under 3 h",
+             "Host":"Proxmox VE; idle-draw is the decisive platform criterion",
+             "Ventilation":"≈200–260 CFM minimum, N+1 fan redundancy" },
+      envelope:"Platform choice dominates energy: EPYC/Threadripper idle at 100–150 W doing nothing. 2× RTX 4090 on a high-end consumer CPU gives comparable heavy compute at ≈30 W idle — worth ≈2.4 kWh/day.",
+      notes:[ "Load shedding is mandatory, not a nicety: spin GPUs up when generation is strong, throttle when SoC falls, and never touch the 12 V island.",
+              "Deliberately a bolted-on experiment, killable at any time without affecting life support.",
+              "It lives between the drive tyres for acoustic silence — which trades a noise problem for an airflow and humidity problem.",
+              "Whether this is income or a self-powered hobby is unproven. Naming which one it is changes which decisions are correct." ],
+      wiki:"entities/compute-node.md + concepts/compute-arbitrage.md" },
+
+    { id:"network", label:"Network + PoE backbone", group:"Load", status:"open",
+      spec:{ "WAN":"Starlink + 5G bonded and failing over, via an open-source router (OPNsense class)",
+             "LAN":"One managed 8-port gigabit PoE switch feeding PoE HATs, cameras, Pi cluster",
+             "Overlay":"Tailscale/WireGuard — MANDATORY, not optional","Draw":"≈150 W continuous" },
+      envelope:"Do not put ten wall-warts on the inverter: each AC brick wastes 10–15%. One DC-fed PoE switch powers and connects everything downstream over single Cat6 runs.",
+      notes:[ "CGNAT is a fact of both Starlink and cellular: there is no public IPv4 and no port forwarding. An overlay tunnel is the only path in.",
+              "The overlay is also what lets the dashboard reach the rig's Grafana/Proxmox endpoints from anywhere — whatever the rig's IP is.",
+              "Segmentation matters: a compromised service must not reach the inverter telemetry control plane." ],
+      wiki:"entities/network-and-overlay.md" },
+
+    { id:"island", label:"12 V house island", group:"Life support", status:"settled",
+      spec:{ "Load":"≈25–35 Ah/day (≈0.32–0.44 kWh) — lights, water pump, vent fan",
+             "Fed by":"Its own panel(s) + its own MPPT. NOT distributed from the 48 V bank.",
+             "Autonomy":"≈8.6 days on ~3 kWh usable with zero generation" },
+      envelope:"2–3 panels gives genuine winter margin and panel-failure redundancy — cheap, because the load is tiny. The split vs the compute side is CONTESTED.",
+      notes:[ "This is the project's best decision: if a runaway Proxmox job drains the 48 V bank, you must not lose lights and water. Coupling life support to the GPU experiment inverts the priority order.",
+              "Keep the streams separate: a Victron-class MPPT for solar, a separate wind controller with its own dump load. If the chaotic wind controller dies, solar keeps the island alive.",
+              "⚠️ Open question: the 25–35 Ah/day estimate omits the RV FURNACE. A 12 V furnace blower draws 5–8 A while running. If the furnace is on this island, winter load is dominated by it and the sizing changes completely." ],
+      wiki:"entities/rv-12v-house-island.md + concepts/panel-split-strategy.md" },
+
+    { id:"shore", label:"50 A shore pedestal input", group:"Backstop", status:"settled",
+      spec:{ "Input":"50 A / 30 A RV shore cord, as AC input 1",
+             "Self-shore trick":"Plug the coach's own shore cord into the inverter's AC output — the rig thinks it is at a campground. 5–10% inversion tax, zero rewiring.",
+             "Legacy charger":"Xantrex unit in the basement — MODEL UNVERIFIED" },
+      envelope:"A 30 A pedestal is 120 V only, which is exactly why the mini-split must be 120 V. PowerAssist exists so a weak pedestal supplements from the battery instead of tripping.",
+      notes:[ "The self-shore trick preserves 20-year-old factory wiring and its protection, and is reversible by unplugging one cord.",
+              "⚠️ NEUTRAL-GROUND BONDING: an RV's shore inlet is normally bonded at the pedestal. Feeding it from an inverter means the bond must come from the inverter. This is a genuine shock hazard and must be verified by a competent electrician.",
+              "Zero-export programming matters — never backfeed a campground's grid." ],
+      wiki:"entities/shore-power-pedestal.md + entities/xantrex-converter.md" },
+
+    { id:"minisplit", label:"120 V mini-split", group:"Load", status:"settled",
+      spec:{ "Voltage":"120 V (decided)","Capacity":"≈12,000 BTU after solar-gain reduction",
+             "Reason 120 V":"Runs on a 30 A pedestal; drops onto one existing single breaker",
+             "Replaces":"The 27,000 BTU basement A/C (removed — it also freed the prime basement volume)" },
+      envelope:"Normally a 38 ft fibreglass greenhouse demands 240 V. Attacking the load first — exterior one-way tint plus the Bermuda shutters — is what makes 12 k BTU defensible.",
+      notes:[ "A 240 V unit dies on a 30 A pedestal, i.e. exactly when the main inverter has failed. In a system built on graceful degradation, that is the wrong choice.",
+              "Variable-speed inverter compressor ramps instead of surging — unlike the old unit's ~3,000 W startup slam. That is why a mini-split is compatible with a modest bank at all.",
+              "⚠️ Tint goes OUTSIDE. Interior film still lets the energy through the glass, where it radiates into the cabin.",
+              "⚠️ Condenser siting on a motorhome is unresolved, and it is the biggest practical unknown on this page." ],
+      wiki:"entities/minisplit-cooling.md + comparisons/120v-vs-240v-minisplit.md" }
+  ],
+
+  /* Ledger numbers — recomputed from the wiki's assumptions. See queries/power-ledger.md */
+  ledger: {
+    assumptions: [
+      ["PV derate (flat + thermal + soiling + wiring)", "0.75","transcript planning figure, unmeasured"],
+      ["Peak sun hours (poor / average / good)", "3.0 / 4.5 / 5.5","generic — replace with PVWatts for the real site"],
+      ["Winter PSH", "1.5","rough seasonal factor, unverified"],
+      ["Wind yield","0.5–1.0 kWh/night","capacity factor 10–20%"],
+      ["Compute at full load","1,250 W","4×5070 class + host"],
+      ["Network + Pi swarm + gateway","150 W","continuous"],
+      ["RV baseline (fridge, pump, lights, inverter idle)","200 W","continuous"]
+    ],
+    generation: [
+      ["10 × 300 W","3,000 W", 6.8, 10.1, 12.4, 13.5, 3.4],
+      ["8 × 400 W (transcript anchor)","3,200 W", 7.2, 10.8, 13.2, 14.4, 3.6],
+      ["4 × 900 W","3,600 W", 8.1, 12.2, 14.8, 16.2, 4.0],
+      ["12 × 400 W (full roof)","4,800 W",10.8, 16.2, 19.8, 21.6, 5.4]
+    ],
+    demand: [
+      ["Idle 24/7, no GPU work",  6.0, 8.4, 14.4],
+      ["GPU 4 h/day",            10.0, 8.4, 18.4],
+      ["GPU 8 h/day",            14.0, 8.4, 22.4],
+      ["GPU 12 h/day",           18.0, 8.4, 26.4],
+      ["GPU 24/7 (transcript)",  30.0, 8.4, 38.4]
+    ],
+    /* balance basis: 8×400 W roof + 0.75 kWh wind, average sun = 11.55 kWh/day */
+    balanceBasis: 11.55,
+    roofFit: [
+      ["300 W","4.8 × 3.0 ft", 14.40, 15, 4500],
+      ["400 W","5.5 × 3.5 ft", 19.25, 11, 4400],
+      ["900 W residential","7.5 × 4.0 ft", 30.00, 7, 6300]
+    ],
+    autonomy: [ ["400 W steady", 6.4], ["1,250 W steady", 2.0], ["1,600 W steady", 1.6], ["2,600 W steady", 1.0] ]
+  }
+};
+
+/* ============================================================================
+   OPTIONAL LIVE DATA
+   Drop a `live.json` next to this file, or set window.LEVIATHAN_LIVE before load:
+     { "metrics": { "soc": 78, "pv_w": 2140, "load_w": 1180 },
+       "dashboards": { "grafana": "http://100.x.x.x:3000/d/leviathan",
+                       "victron": "http://venus.local", "proxmox": "https://prox:8006" } }
+   Nothing here is required — without it the panel shows the wiki envelope only.
+   ========================================================================== */
+const DASH_KEYS = { inverter:"victron", network:"grafana", compute:"proxmox", bank:"victron" };
+let LIVE = { metrics:{}, dashboards:{} };
+if (window.LEVIATHAN_LIVE) LIVE = Object.assign(LIVE, window.LEVIATHAN_LIVE);
+try {
+  const r = await fetch('live.json', { cache:'no-store' });
+  if (r.ok) LIVE = Object.assign(LIVE, await r.json());
+} catch (e) { /* offline / not configured — expected */ }
+
+/* ============================================================================
+   SCENE
+   ========================================================================== */
+const stage = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+stage.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b0f14);
+scene.fog = new THREE.Fog(0x0b0f14, 70, 190);
+
+const camera = new THREE.PerspectiveCamera(46, innerWidth/innerHeight, 0.5, 600);
+camera.position.set(-54, 20, 34);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.06;
+controls.target.set(-2, 6.5, 0);
+controls.maxPolarAngle = Math.PI * 0.495;
+controls.minDistance = 8; controls.maxDistance = 160;
+
+// lights
+const hemi = new THREE.HemisphereLight(0xbcd8f0, 0x2b3541, 2.3);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff3e0, 3.4);
+sun.position.set(-38, 44, 26);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+const cam = sun.shadow.camera;
+cam.left=-55; cam.right=55; cam.top=55; cam.bottom=-55; cam.near=1; cam.far=190;
+sun.shadow.bias = -0.0006;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0x8fc0e0, 1.1);
+fill.position.set(34, 18, -30);
+scene.add(fill);
+const warm = new THREE.PointLight(0xffbb66, 24, 26, 2);
+warm.position.set(0, 2.2, 0);
+scene.add(warm);
+
+// ground
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(400, 400),
+  new THREE.MeshStandardMaterial({ color:0x2a3542, roughness:0.95, metalness:0.05 })
+);
+ground.rotation.x = -Math.PI/2;
+ground.receiveShadow = true;
+scene.add(ground);
+const grid = new THREE.GridHelper(240, 48, 0x4a6b85, 0x33475a);
+grid.position.y = 0.012;
+scene.add(grid);
+
+/* ---------------------------------------------------------------- materials */
+const M = {
+  shell:  new THREE.MeshStandardMaterial({ color:0xd8dce0, roughness:0.62, metalness:0.06 }),
+  shellD: new THREE.MeshStandardMaterial({ color:0x9aa2ab, roughness:0.7,  metalness:0.06 }),
+  dark:   new THREE.MeshStandardMaterial({ color:0x232a32, roughness:0.85 }),
+  glass:  new THREE.MeshStandardMaterial({ color:0x2a4a5e, roughness:0.08, metalness:0.5,
+                                           transparent:true, opacity:0.62 }),
+  pv:     new THREE.MeshStandardMaterial({ color:0x18293f, roughness:0.28, metalness:0.55 }),
+  pvLit:  new THREE.MeshStandardMaterial({ color:0x1d3a52, roughness:0.25, metalness:0.6,
+                                           emissive:0x0d2a3a, emissiveIntensity:0.7 }),
+  metal:  new THREE.MeshStandardMaterial({ color:0x8e99a4, roughness:0.34, metalness:0.85 }),
+  rack:   new THREE.MeshStandardMaterial({ color:0x2f3740, roughness:0.6, metalness:0.4 }),
+  battery:new THREE.MeshStandardMaterial({ color:0x24313c, roughness:0.65, metalness:0.25 }),
+  copper: new THREE.MeshStandardMaterial({ color:0xb87333, roughness:0.4, metalness:0.8 }),
+  pcb:    new THREE.MeshStandardMaterial({ color:0x1d4a3a, roughness:0.55, metalness:0.3 }),
+  shadow: new THREE.MeshStandardMaterial({ color:0x0a0e13, roughness:1 })
+};
+const HK = new THREE.MeshStandardMaterial({ color:0x3fd0c9, emissive:0x3fd0c9, emissiveIntensity:1.5 });
+const HK_MAT = 'userData.highlight';
+
+/* ------------------------------------------------------------ coach factory */
+const coach = new THREE.Group();
+scene.add(coach);
+
+// Every clickable mesh registers here.
+const pickable = [];
+
+function box(w,h,d,mat,x,y,z,parent){
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
+  m.position.set(x,y,z);
+  m.castShadow = true; m.receiveShadow = true;
+  (parent||coach).add(m);
+  return m;
+}
+function cyl(rt,rb,h,seg,mat,x,y,z,parent){
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg), mat);
+  m.position.set(x,y,z);
+  m.castShadow = true;
+  (parent||coach).add(m);
+  return m;
+}
+// Attach a component identity to a mesh (and all its descendants).
+function tag(obj, id, extra){
+  obj.traverse(o => {
+    o.userData.component = id;
+    if (extra) Object.assign(o.userData, extra);
+  });
+  pickable.push(obj);
+  return obj;
+}
+
+/* DIMENSIONS (scene units = feet)
+   length 38 along X · beam 8.5 along Z · wheels touch y=0 · roof top y=11  */
+const L=38, B=8.5, ROOF=11, BASE_T=3.0;
+const halfL=L/2, halfB=B/2;
+
+/* ---- basement (y 1.5 → 3.0): the reclaimed volume.
+   Deliberately narrower than the body (7.6 vs 8.5) so the wheels sit proud in
+   shadowed wells and read as wheels instead of being swallowed by the box. ---- */
+box(L, 1.5, 7.6, M.shellD, 0, 2.25, 0);
+// bay doors
+for (let i=0;i<5;i++){
+  box(5.6, 1.15, 0.12, M.dark, -13.5+i*6.75, 2.25, 3.82);
+}
+
+/* ---- body ---- */
+const body = box(L, 8, B, M.shell, 0, ROOF-4, 0);
+// raked front cap
+const nose = box(1.6, 7.6, B*0.99, M.shell, -halfL+0.6, ROOF-4.2, 0);
+nose.rotation.z = 0.06;
+// windshield — large, raked, split. This is what makes it read as a motorhome.
+const wsh = box(0.4, 6.4, B*0.93, M.glass, -halfL+0.05, ROOF-3.0, 0);
+wsh.rotation.z = 0.17;
+box(0.2, 6.2, 0.2, M.shellD, -halfL-0.1, ROOF-3.0, 0);
+// grille + front fascia
+box(0.5, 1.5, B*0.72, M.dark, -halfL-0.12, 4.55, 0);
+// headlights — bigger, so they read from a distance
+const lampMat = new THREE.MeshStandardMaterial({ color:0xf6efdd, roughness:0.12, metalness:0.35,
+                                                 emissive:0x3a3222, emissiveIntensity:1.0 });
+box(0.4, 1.0, 1.5, lampMat, -halfL-0.22, 4.75, -2.95);
+box(0.4, 1.0, 1.5, lampMat, -halfL-0.22, 4.75,  2.95);
+// front bumper
+box(0.9, 1.0, B*0.96, M.shellD, -halfL-0.4, 3.6, 0);
+// mirrors on arms — with actual glass so they read as mirrors
+for (const s of [-1, 1]){
+  box(0.18, 0.18, 2.0, M.metal, -halfL+1.8, ROOF-1.2, s*4.6);
+  const mh = box(0.4, 2.1, 1.0, M.dark, -halfL+1.8, ROOF-1.9, s*5.5);
+  const mg = box(0.12, 1.85, 0.85, M.glass, -halfL+1.6, ROOF-1.9, s*5.5);
+}
+// entry door: recessed dark leaf inside a lighter frame, with a handle — reads as a door
+box(0.22, 5.9, 2.7, M.shell, -8.0, 6.4, halfB+0.05);
+box(0.2, 5.3, 2.2, M.dark, -8.0, 6.4, halfB+0.14);
+box(0.14, 0.5, 0.14, M.metal, -8.0, 6.1, halfB+0.26);
+box(0.2, 0.35, 2.9, M.metal, -8.0, 3.55, halfB+0.1);
+// panoramic side glass (the "terrarium"). The +z flank keeps room for the entry
+// door and the 4 ft slide-out; the -z flank is a full row.
+const sideGlass = { '-1': [-13.5, -7.0, -0.5, 6.0, 12.5], '1': [-15.4, -11.0, 13.4] };
+for (const s of [-1, 1]){
+  for (const x of sideGlass[String(s)]){
+    box(5.9, 3.3, 0.16, M.glass, x, ROOF-4.4, s*(halfB+0.01));
+  }
+}
+// slide-out (4 ft main slide) with a visible rim so it reads as a slide, not a slab
+box(12, 6.6, 0.7, M.shellD, 4, BASE_T+3.3, halfB+0.3);
+box(12.4, 0.22, 0.9, M.metal, 4, BASE_T+6.6, halfB+0.3);
+box(12.4, 0.22, 0.9, M.metal, 4, BASE_T+0.05, halfB+0.3);
+for (const s of [-1, 1]) box(0.22, 6.8, 0.9, M.metal, 4 + s*6.1, BASE_T+3.3, halfB+0.3);
+box(9.0, 3.4, 0.1, M.glass, 4, BASE_T+3.9, halfB+0.63);
+// rear cap
+box(0.9, 7.6, B*0.96, M.shellD, halfL-0.35, ROOF-4, 0);
+// roof edge rail
+box(L, 0.22, B+0.3, M.shellD, 0, ROOF+0.09, 0);
+
+/* ---- wheels: proud of the narrower basement so they read in shadow ---- */
+function wheel(x, z, r, w, dual){
+  const g = new THREE.Group();
+  const t = new THREE.Mesh(new THREE.CylinderGeometry(r, r, w, 24), M.dark);
+  t.rotation.x = Math.PI/2; t.castShadow = true; g.add(t);
+  const rm = new THREE.Mesh(new THREE.CylinderGeometry(r*0.52, r*0.52, w+0.04, 18), M.metal);
+  rm.rotation.x = Math.PI/2; g.add(rm);
+  if (dual){
+    const t2 = new THREE.Mesh(new THREE.CylinderGeometry(r, r, w*0.8, 24), M.dark);
+    t2.rotation.x = Math.PI/2; t2.position.z = (z>0?1:-1)*w*0.92; t2.castShadow = true;
+    const r2 = new THREE.Mesh(new THREE.CylinderGeometry(r*0.52, r*0.52, w*0.84, 18), M.metal);
+    r2.rotation.x = Math.PI/2; r2.position.z = (z>0?1:-1)*w*0.92;
+    g.add(t2, r2);
+  }
+  g.position.set(x, r, z); coach.add(g);
+}
+wheel(-11.5, -4.05, 1.38, 1.0, false);
+wheel(-11.5,  4.05, 1.38, 1.0, false);
+wheel(  9.5, -4.10, 1.46, 1.05, true);
+wheel(  9.5,  4.10, 1.46, 1.05, true);
+// shadowed wheel wells
+for (const [x,r] of [[-11.5,1.38],[9.5,1.46]]){
+  for (const s of [-1,1]){
+    const w = box(4.6, r*1.5, 0.5, M.shadow, x, r*0.85, s*3.9);
+    w.material = M.shadow;
+  }
+}
+
+/* ---- roof solar array: 2 columns × 4 rows = 8 panels, on visible Z-brackets ---- */
+const pvGeo = new THREE.BoxGeometry(5.5, 0.14, 3.5);
+const railGeo = new THREE.BoxGeometry(5.6, 0.2, 0.22);
+const brkGeo = new THREE.BoxGeometry(0.24, 0.34, 0.6);
+for (const z of [-2.1, 2.1]){
+  for (const x of [-8, -2, 4, 10]){
+    const p = new THREE.Mesh(pvGeo, M.pv);
+    p.position.set(x, ROOF+0.35, z); p.castShadow = true; p.receiveShadow = true;
+    tag(p, 'panels');
+    coach.add(p);
+    // mounting rails under each panel
+    for (const dz of [-1.5, 1.5]){
+      const r = new THREE.Mesh(railGeo, M.metal);
+      r.position.set(x, ROOF+0.22, z+dz*0.55);
+      r.castShadow = true; coach.add(r);
+    }
+    // Z-brackets: the panel is visibly bolted down, not hovering
+    for (const dx of [-2.4, 2.4]){
+      for (const dz of [-1.5, 1.5]){
+        const b = new THREE.Mesh(brkGeo, M.metal);
+        b.position.set(x+dx, ROOF+0.17, z+dz*0.55);
+        b.castShadow = true;
+        tag(b, 'panels');
+        coach.add(b);
+      }
+    }
+  }
+}
+// roof obstacles (why 8, not 12 — the array must respect the layout)
+box(3.2, 0.28, 3.2, M.glass, -14.6, ROOF+0.3, 0);   // skylight
+box(1.6, 0.5, 1.6, M.dark, 15.6, ROOF+0.35, 1.4);    // vent
+box(1.6, 0.5, 1.6, M.dark, 15.6, ROOF+0.35, -1.4);   // vent
+
+/* ---- Bermuda shutters: 3 deployable panels on the sun side ---- */
+const shutterGrp = new THREE.Group();
+coach.add(shutterGrp);
+const shutters = [];
+for (let i=0;i<3;i++){
+  const g = new THREE.Group();
+  const p = new THREE.Mesh(new THREE.BoxGeometry(7.4, 0.16, 4.2), M.pvLit);
+  p.rotation.z = -Math.PI*0.42; p.position.y = 7.6;
+  const legA = cyl(0.16,0.16,7.8,10,M.metal, -3.2, 3.9, 1.5, g);
+  const legB = cyl(0.16,0.16,7.8,10,M.metal,  3.2, 3.9, 1.5, g);
+  const ball = box(4.4, 0.7, 3.0, M.dark, 0, 0.35, 1.5, g);
+  tag(p, 'shutters');
+  g.add(p);
+  g.position.set(-6 + i*7.2, 0, halfB + 2.6);
+  shutterGrp.add(g);
+  shutters.push({ g, base: g.position.z, stowed: halfB + 0.5, deployed: halfB + 2.6, t: 0 });
+}
+shutterGrp.visible = false;
+
+/* ---- VAWT mast assembly (rear hitch) ---- */
+const mastGrp = new THREE.Group();
+coach.add(mastGrp);
+const MAST_X = halfL + 2.6;
+// receiver + sleeve, braced to the frame so the mast visibly bears on the coach
+box(3.4, 0.9, 1.4, M.dark, halfL+0.9, 1.9, 0);
+box(0.5, 0.5, 2.6, M.metal, halfL+0.2, 2.0, 0);
+cyl(1.15, 1.15, 3.2, 14, M.metal, MAST_X, 3.5, 0, mastGrp);
+// diagonal brace from the receiver up to the mast (stows with the mast)
+box(3.0, 0.36, 0.36, M.metal, halfL+1.2, 5.2, 0, mastGrp).rotation.z = 0.62;
+const mastH = 22;
+cyl(0.42, 0.5, mastH, 16, M.metal, MAST_X, 3.5 + mastH/2, 0, mastGrp);
+// guy ring + 3 guy wires (anchors pulled in to ~22 ft so they read as this rig's guys)
+const ring = cyl(1.0, 1.0, 0.22, 16, M.metal, MAST_X, 3.5 + mastH - 3.4, 0, mastGrp);
+const guyMat = new THREE.LineBasicMaterial({ color:0x9fb4c6, transparent:true, opacity:0.9 });
+const anchors = [[-5, 0.2, 21],[ -5, 0.2, -21],[ 27, 0.2, 0]];
+for (const a of anchors){
+  const g = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(MAST_X, 3.5 + mastH - 3.4, 0),
+    new THREE.Vector3(a[0], a[1], a[2])
+  ]);
+  mastGrp.add(new THREE.Line(g, guyMat));
+  // proper earth anchor: driven stake + ground plate
+  cyl(0.16, 0.16, 1.4, 8, M.copper, a[0], 0.7, a[2], mastGrp);
+  const plate = box(0.9, 0.14, 0.9, M.metal, a[0], 0.1, a[2], mastGrp);
+  plate.rotation.x = 0.12;
+}
+// turbine: static bearing housing + a rotor (central shaft + 3 helical blades)
+const turbine = new THREE.Group();
+turbine.position.set(MAST_X, 3.5 + mastH + 1.6, 0);
+mastGrp.add(turbine);
+cyl(0.85, 0.85, 2.0, 16, M.metal, 0, 0, 0, turbine);      // bearing housing
+const blades = new THREE.Group();
+turbine.add(blades);
+cyl(0.34, 0.34, 10.0, 12, M.metal, 0, 0, 0, blades);      // rotor shaft
+cyl(0.55, 0.55, 0.7, 14, M.copper, 0, -5.2, 0, blades);   // lower bearing
+cyl(0.45, 0.12, 1.3, 12, M.copper, 0, 5.4, 0, blades);    // top cap
+const bladeMat = new THREE.MeshStandardMaterial({ color:0xeef2f5, roughness:0.32, metalness:0.45,
+                                                  side:THREE.DoubleSide });
+// three blade assemblies 120deg apart, each a helical stack of thin tapered foils set
+// clearly outboard of the shaft so the rotor reads as a rotor from any angle.
+const BR = 1.75;
+for (let i=0;i<3;i++){
+  const asm = new THREE.Group();
+  asm.rotation.y = i * (Math.PI*2/3);
+  for (let s=0;s<6;s++){
+    const w = 1.5 - Math.abs(s-2.5) * 0.10;
+    const seg = new THREE.Mesh(new THREE.BoxGeometry(w, 1.6, 0.1), bladeMat);
+    const a = s * 0.30 + i * 0.10;
+    seg.position.set(Math.sin(a) * BR, -4.0 + s*1.6, Math.cos(a) * BR);
+    seg.rotation.y = a;
+    seg.castShadow = true;
+    asm.add(seg);
+  }
+  blades.add(asm);
+}
+cyl(0.7, 0.7, 1.6, 12, M.metal, 0, 1.6, 0, turbine);
+cyl(0.9, 0.2, 1.0, 12, M.copper, 0, 2.6, 0, turbine);
+tag(mastGrp, 'mast');
+// the rig is stationary-dominant, so the mast ships deployed — the button stows it
+mastGrp.visible = true;
+
+/* ---- basement contents: bank · inverter · compute · network ---- */
+const basementGrp = new THREE.Group();
+coach.add(basementGrp);
+
+// battery rack: 4 × 48V/300Ah, over the rear axles
+const bankGrp = new THREE.Group();
+for (let i=0;i<4;i++){
+  const u = box(3.4, 1.15, 6.0, M.battery, 5.6, 2.25, -2.1 + i*1.45, bankGrp);
+  box(3.5, 0.1, 6.1, M.rack, 5.6, 2.86, -2.1 + i*1.45, bankGrp);
+  const busbar = box(0.18, 0.12, 5.2, M.copper, 7.3, 2.4, -2.1 + i*1.45, bankGrp);
+}
+const cage = box(3.9, 1.5, 6.6, M.rack, 5.6, 2.25, 0.1, bankGrp);
+cage.material = new THREE.MeshStandardMaterial({ color:0x39424d, roughness:0.7, metalness:0.5,
+                                                 wireframe:true });
+tag(bankGrp, 'bank');
+basementGrp.add(bankGrp);
+
+// inverter/charger on the bay wall
+const invGrp = box(1.0, 2.4, 2.6, M.metal, -1.5, 2.3, -2.6, basementGrp);
+tag(invGrp, 'inverter');
+
+// compute node: 4 GPU chassis + fan bank
+const compGrp = new THREE.Group();
+for (let i=0;i<4;i++){
+  const g = box(4.6, 0.42, 3.4, M.rack, -8.5, 2.0 + i*0.5, -1.4, compGrp);
+  const l = box(4.2, 0.06, 3.0, M.pcb, -8.5, 2.24 + i*0.5, -1.4, compGrp);
+}
+for (let i=0;i<4;i++){
+  const f = cyl(0.42, 0.42, 0.18, 12, M.dark, -6.1, 2.05 + i*0.5, -2.5, compGrp);
+  f.rotation.z = Math.PI/2;
+}
+tag(compGrp, 'compute');
+basementGrp.add(compGrp);
+
+// PoE switch + network
+const netGrp = box(1.6, 0.28, 1.2, M.pcb, 12.5, 2.3, -1.0, basementGrp);
+tag(netGrp, 'network');
+
+// genset (front basement)
+const genGrp = box(5.0, 1.3, 5.4, M.dark, -14.5, 2.25, 0, basementGrp);
+box(1.0, 1.0, 0.6, M.metal, -12.0, 2.25, 1.6, genGrp);
+tag(genGrp, 'genset');
+
+// 12V house island + its own MPPT
+const islGrp = new THREE.Group();
+box(2.0, 1.0, 1.6, M.battery, 15.6, 2.2, 1.6, islGrp);
+box(0.6, 0.6, 0.5, M.copper, 15.6, 2.4, -1.2, islGrp);
+tag(islGrp, 'island');
+basementGrp.add(islGrp);
+
+// mini-split condenser on the exterior wall
+const msGrp = box(2.4, 1.6, 0.8, M.shellD, 12.0, 5.0, halfB+0.4);
+tag(msGrp, 'minisplit');
+
+// shore inlet
+const shoreGrp = box(0.4, 0.5, 0.5, M.dark, -halfL+0.2, 4.2, -3.4);
+tag(shoreGrp, 'shore');
+
+// find the shutters already tagged; keep basement hidden by default
+basementGrp.visible = false;
+coach.traverse(o => { if (o.isMesh && o.material) o.userData.origColor = o.material.color.getHex(); });
+
+/* ------------------------------------------------------- energy-flow pulses */
+const flowGrp = new THREE.Group();
+scene.add(flowGrp);
+const flows = [];
+const pulseGeo = new THREE.SphereGeometry(0.22, 8, 8);
+
+function flow(pts, color, speed, label){
+  const mat = new THREE.MeshBasicMaterial({ color });
+  // draw the route as a faint line so the travelling beads read as "on a wire",
+  // not as dots floating in mid-air.
+  const lineGeo = new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(...p)));
+  const line = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({
+    color, transparent:true, opacity:0.28 }));
+  flowGrp.add(line);
+  const n = 4;
+  const beads = [];
+  for (let i=0;i<n;i++){
+    const b = new THREE.Mesh(pulseGeo, mat);
+    flowGrp.add(b); beads.push({ mesh:b, t:i/n });
+  }
+  const seg = [];
+  let total = 0;
+  for (let i=0;i<pts.length-1;i++){
+    const a = new THREE.Vector3(...pts[i]), b2 = new THREE.Vector3(...pts[i+1]);
+    const len = a.distanceTo(b2); seg.push({ a, b:b2, len, start:total }); total += len;
+  }
+  flows.push({ beads, seg, total, speed, label });
+}
+// solar roof → inverter → bank. Routed along the roof and down the flank, not through the air.
+flow([[10, ROOF+0.45, 2.1],[4, ROOF+0.4, 2.4],[-2, ROOF+0.4, 2.4],[-2, ROOF+0.4, -1.6],
+      [-2, 2.3, -2.6]], 0x3fd0c9, 0.10, 'PV');
+// bank → compute
+flow([[5.6, 2.4, 0.1],[0, 2.0, -1.4],[-8.5, 2.2, -1.4]], 0xf5b544, 0.13, 'bank→GPU');
+// mast → wind controller → island
+flow([[MAST_X, 4.0, 0],[halfL+0.4, 2.4, 2.2],[15.6, 2.3, 1.6],[5.6, 2.3, 0.1]], 0x6fd0a0, 0.09, 'wind');
+// genset + shore → inverter
+flow([[-14.5, 2.2, 0],[-6.0, 2.2, -2.0],[-1.5, 2.3, -2.6]], 0xe2604a, 0.11, 'gen/shore→inv');
+flow([[5.6, 2.3, 0.1],[0, 2.4, -2.6],[-1.5, 2.3, -2.6]], 0x9db4c8, 0.08, 'bank→inv');
+// inverter → mini-split
+flow([[-1.5, 2.3, -2.6],[-1.5, 4.6, -3.4],[12.0, 4.9, -3.9]], 0x8fa8dd, 0.07, 'inv→cooling');
+
+/* ============================================================================
+   INTERACTION
+   ========================================================================== */
+const ray = new THREE.Raycaster();
+const ptr = new THREE.Vector2();
+const tip = document.getElementById('tip');
+let hovered = null;
+
+function hitAt(ev){
+  ptr.x = (ev.clientX / innerWidth) * 2 - 1;
+  ptr.y = -(ev.clientY / innerHeight) * 2 + 1;
+  ray.setFromCamera(ptr, camera);
+  const hits = ray.intersectObjects(pickable, true);
+  for (const h of hits){
+    let o = h.object;
+    while (o && !o.userData.component) o = o.parent;
+    if (o && o.userData.component) return o.userData.component;
+  }
+  return null;
+}
+function setHighlight(id, on){
+  if (!id) return;
+  for (const root of pickable){
+    if (root.userData.component !== id) continue;
+    root.traverse(o => {
+      if (!o.isMesh || !o.material || !o.material.emissive) return;
+      if (on){
+        // materials are shared between meshes of the same type, so clone before
+        // tinting — otherwise highlighting one component lights up unrelated parts.
+        if (!o.userData._origMat){ o.userData._origMat = o.material; o.material = o.material.clone(); }
+        o.material.emissive.setHex(0x2fd0c9);
+        o.material.emissiveIntensity = 0.55;
+      } else if (o.userData._origMat){
+        o.material.dispose();
+        o.material = o.userData._origMat;
+        delete o.userData._origMat;
+      }
+    });
+  }
+}
+renderer.domElement.addEventListener('pointermove', ev => {
+  const id = hitAt(ev);
+  if (id !== hovered){
+    if (hovered) setHighlight(hovered, false);
+    hovered = id;
+    if (id) setHighlight(id, true);
+    renderer.domElement.style.cursor = id ? 'pointer' : 'grab';
+  }
+  if (id){
+    const c = WIKI.components.find(x => x.id === id);
+    tip.textContent = c ? c.label : id;
+    tip.style.display = 'block';
+    tip.style.left = (ev.clientX + 14) + 'px';
+    tip.style.top  = (ev.clientY + 14) + 'px';
+  } else tip.style.display = 'none';
+});
+renderer.domElement.addEventListener('pointerdown', ev => { downAt = { x:ev.clientX, y:ev.clientY }; });
+let downAt = null;
+renderer.domElement.addEventListener('pointerup', ev => {
+  tip.style.display = 'none';
+  if (!downAt) return;
+  const moved = Math.hypot(ev.clientX-downAt.x, ev.clientY-downAt.y);
+  downAt = null;
+  if (moved > 5) return;             // it was an orbit drag, not a click
+  const id = hitAt(ev);
+  if (id) select(id);
+});
+renderer.domElement.addEventListener('pointerleave', () => {
+  tip.style.display = 'none';
+  if (hovered) setHighlight(hovered, false);
+  hovered = null;
+});
+
+/* ------------------------------------------------------------ side panel */
+const panel = document.getElementById('panel');
+const pb = document.getElementById('pbody');
+let currentDash = null;
+
+function fmtMetrics(id){
+  const m = LIVE.metrics || {};
+  const keys = {
+    panels:   [['PV now','pv_w','W']],
+    bank:     [['SoC','soc','%'],['Bank voltage','v_batt','V']],
+    inverter: [['Load','load_w','W'],['Input','ac_in','']],
+    compute:  [['GPU load','gpu_w','W'],['GPU temp','gpu_c','°C']],
+    network:  [['WAN','wan','']],
+    island:   [['12 V SoC','soc_12v','%']],
+    genset:   [['Genset','genset','']],
+    mast:     [['Wind','wind_w','W'],['Wind speed','wind_ms','m/s']],
+    minisplit:[['Cooling','cool_w','W']]
+  }[id] || [];
+  if (!keys.length) return '';
+  let h = '<h3>Live</h3>';
+  for (const [label, k, unit] of keys){
+    const v = m[k];
+    h += `<div class="live"><span>${label}</span><span class="${v===undefined?'stale':''}">${
+      v===undefined ? 'no source' : (v + ' ' + unit).trim()}</span></div>`;
+  }
+  return h;
+}
+function dashSection(id){
+  const key = DASH_KEYS[id];
+  const url = key && (LIVE.dashboards || {})[key];
+  let h = '<h3>Dashboard</h3>';
+  if (!url){
+    h += '<div id="dash"><div class="ph">No dashboard attached.<br>'
+      + '<span style="opacity:.7">Add to <code>live.json</code>: '
+      + `<br>{"dashboards":{"${key||'grafana'}":"http://…"}}`
+      + '</span></div></div>';
+    return h;
+  }
+  h += `<div id="dash" data-url="${url}"><div class="ph">Loading ${key}…</div></div>`;
+  h += `<div class="row"><a class="btn" href="${url}" target="_blank" rel="noopener">Open in new tab ↗</a></div>`;
+  h += `<p style="font-size:11px;color:var(--dim);margin-top:8px">If the frame stays blank, the `
+     + `target is refusing to be embedded. Use the link above.</p>`;
+  return h;
+}
+function select(id){
+  const c = WIKI.components.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('pk').textContent = c.group;
+  document.getElementById('pt').textContent = c.label;
+  const st = document.getElementById('ps');
+  st.className = 'status ' + c.status;
+  st.textContent = c.status;
+
+  let h = '';
+  if (c.spec) {
+    h += '<h3>Specification</h3><table class="spec">';
+    for (const k in c.spec) h += `<tr><td>${k}</td><td>${c.spec[k]}</td></tr>`;
+    h += '</table>';
+  }
+  if (c.envelope) h += `<h3>Envelope — what is NOT fixed</h3><p>${c.envelope}</p>`;
+  if (c.notes && c.notes.length){
+    h += '<h3>Notes &amp; warnings</h3>';
+    for (const n of c.notes){
+      const cls = n.includes('⚠️⚠️') ? 'note danger' : n.includes('⚠️') ? 'note danger' : 'note';
+      h += `<div class="${cls}">${n}</div>`;
+    }
+  }
+  h += fmtMetrics(id);
+  h += dashSection(id);
+  h += `<h3>Page of record</h3><div class="wiki">~/leviathan-wiki/${c.wiki}</div>`;
+  pb.innerHTML = h;
+  pb.scrollTop = 0;
+  panel.classList.add('open');
+
+  // lazily mount the dashboard iframe so it does not load until asked for
+  const d = document.getElementById('dash');
+  if (d && d.dataset.url){
+    const f = document.createElement('iframe');
+    f.src = d.dataset.url;
+    f.setAttribute('referrerpolicy','no-referrer');
+    d.innerHTML = ''; d.appendChild(f);
+  }
+}
+document.getElementById('close').onclick = () => panel.classList.remove('open');
+
+/* focus views */
+const VIEWS = {
+  coach:    { p:[-54, 20, 34],  t:[-2, 6.5, 0] },
+  basement: { p:[-24, 12, 26],  t:[-4, 2.4, 0] },
+  rig:      { p:[-52, 24, 40],  t:[1, 10, 0] }
+};
+document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => {
+  const v = VIEWS[b.dataset.view]; if (!v) return;
+  flyTo(new THREE.Vector3(...v.p), new THREE.Vector3(...v.t));
+  if (b.dataset.view === 'basement') basementGrp.visible = true;
+});
+let flight = null;
+function flyTo(p, t){
+  flight = { p0:camera.position.clone(), t0:controls.target.clone(), p1:p, t1:t, k:0 };
+}
+
+/* toggles */
+let dayMode = true, flowOn = true;
+const bDay = document.getElementById('bDay'), bFlow = document.getElementById('bFlow');
+const bShut = document.getElementById('bShutters'), bMast = document.getElementById('bMast');
+bDay.onclick = () => {
+  dayMode = !dayMode;
+  bDay.classList.toggle('on', dayMode);
+  bDay.textContent = dayMode ? '☀ Day' : '☾ Night';
+  sun.intensity = dayMode ? 2.6 : 0.25;
+  hemi.intensity = dayMode ? 1.5 : 0.35;
+  fill.intensity = dayMode ? 0.6 : 0.18;
+  scene.background = new THREE.Color(dayMode ? 0x0b0f14 : 0x06080b);
+  grid.material.opacity = dayMode ? 1 : 0.35;
+  warm.intensity = dayMode ? 24 : 40;
+};
+bFlow.onclick = () => { flowOn = !flowOn; flowGrp.visible = flowOn; bFlow.classList.toggle('on', flowOn); };
+let shuttersOut = false;
+bShut.onclick = () => {
+  shuttersOut = !shuttersOut;
+  shutterGrp.visible = true;
+  for (const s of shutters) s.target = shuttersOut ? s.deployed : s.stowed;
+  bShut.classList.toggle('on', shuttersOut);
+  bShut.textContent = shuttersOut ? '▤ Stow shutters' : '▤ Deploy shutters';
+};
+bMast.onclick = () => {
+  mastGrp.visible = !mastGrp.visible;
+  bMast.classList.toggle('on', mastGrp.visible);
+  bMast.textContent = mastGrp.visible ? '⌇ Stow mast' : '⌇ Deploy mast';
+};
+
+/* ------------------------------------------------------------ ledger overlay */
+const led = document.getElementById('ledger');
+document.getElementById('bLedger').onclick = () => led.classList.toggle('open');
+led.addEventListener('click', e => { if (e.target === led) led.classList.remove('open'); });
+
+function buildLedger(){
+  const D = WIKI.ledger;
+  let h = `<h1>Power ledger</h1>
+    <div class="sub">Computed from ${WIKI.meta.vessel} assumptions. Every figure is an estimate
+    until replaced with measured data — see <code>queries/power-ledger.md</code>.</div>
+
+    <h3>Assumptions in use</h3><table class="lg">
+    <tr><th>Assumption</th><th>Value</th><th>Status</th></tr>`;
+  for (const a of D.assumptions) h += `<tr><td>${a[0]}</td><td>${a[1]}</td><td style="color:#7d8fa3">${a[2]}</td></tr>`;
+  h += `</table>
+
+    <h3>Generation — PV daily yield (kWh/day) at 0.75 derate</h3><table class="lg">
+    <tr><th>Array</th><th>Nominal</th><th class="num">Poor 3.0</th><th class="num">Average 4.5</th>
+    <th class="num">Good 5.5</th><th class="num">Summer 6.0</th><th class="num">Winter 1.5</th></tr>`;
+  for (const g of D.generation){
+    h += `<tr><td>${g[0]}</td><td>${g[1]}</td>`;
+    for (let i=2;i<7;i++) h += `<td class="num">${g[i].toFixed(1)}</td>`;
+    h += '</tr>';
+  }
+  h += `</table>
+
+    <h3>Demand — compute side</h3><table class="lg">
+    <tr><th>Scenario</th><th class="num">Compute</th><th class="num">Net + RV</th><th class="num">Total kWh/day</th>
+    <th class="num">Balance vs ${D.balanceBasis} kWh</th></tr>`;
+  for (const d of D.demand){
+    const bal = D.balanceBasis - d[3];
+    h += `<tr><td>${d[0]}</td><td class="num">${d[1].toFixed(1)}</td><td class="num">${d[2].toFixed(1)}</td>
+          <td class="num">${d[3].toFixed(1)}</td>
+          <td class="num ${bal<0?'neg':'pos'}">${bal>=0?'+':''}${bal.toFixed(2)}</td></tr>`;
+  }
+  h += `</table>
+    <div class="warn"><b>⚠️ There is a structural deficit at every duty cycle — including no GPU work at all.</b><br>
+    The baseline system (idle compute + network + RV loads) already exceeds what an 8×400 W array plus wind
+    produces at average sun. The source transcript sized hardware around ~5 kWh/day and later sized load around
+    38.4 kWh/day, and <b>never reconciled the two</b>. This ledger exists to stop that error being inherited.</div>
+
+    <h3>Roof fit — the array is not area-limited at 8 panels</h3>
+    <p style="color:#7d8fa3;font-size:12px;margin:0 0 10px">Using ~225 sq ft of the ~300 sq ft roof
+    (25% reserved for walking paths and obstacles).</p>
+    <table class="lg"><tr><th>Panel class</th><th>Dimensions</th><th class="num">Area sq ft</th>
+    <th class="num">Fit</th><th class="num">Nominal W</th></tr>`;
+  for (const r of D.roofFit){
+    h += `<tr><td>${r[0]}</td><td>${r[1]}</td><td class="num">${r[2].toFixed(2)}</td>
+          <td class="num">${r[3]}</td><td class="num">${r[4]}</td></tr>`;
+  }
+  h += `</table>
+    <p style="color:#bccbd9;font-size:13px">The roof will physically take 11–12 large panels or 7
+    residential-size panels. The "8 is the sweet spot" conclusion optimises for serviceability and the
+    controller ceiling, <b>not</b> for the energy balance. Whether to use the area is an energy question,
+    not a space question.</p>
+
+    <h3>Storage autonomy — 61.4 kWh bank</h3><table class="lg">
+    <tr><th>Steady load</th><th class="num">Days of storage</th></tr>`;
+  for (const a of D.autonomy) h += `<tr><td>${a[0]}</td><td class="num">${a[1].toFixed(1)}</td></tr>`;
+  h += `</table>
+    <p style="color:#bccbd9;font-size:13px">Capacity is generous. <b>Generation is the constraint</b>,
+    not storage.</p>
+
+    <h3>What it takes to close the gap</h3><ul style="color:#bccbd9;font-size:13px;line-height:1.7">
+    <li><b>Use the full roof.</b> 12×400 W at average sun = 16.2 kWh/day — nearly covers the 4–8 h GPU
+        scenarios without any deployables. Biggest available win, costs only roof space.</li>
+    <li><b>Add the deployables.</b> 3–4 shutter panels add ≈4–6 kWh/day at average sun, and they tilt.</li>
+    <li><b>Throttle compute to the surplus.</b> The cheapest fix is a script, not hardware.</li>
+    <li><b>Let the generator close the residual.</b> Legitimately — that is what it is for.</li>
+    </ul>
+    <p style="color:#7d8fa3;font-size:12px;margin-top:20px">Regenerate this block from
+    <code>~/leviathan-wiki/queries/power-ledger.md</code> when the wiki's assumptions change.</p>`;
+  document.getElementById('ledgerBody').innerHTML = h;
+}
+buildLedger();
+
+/* clock */
+const clockEl = document.getElementById('clock');
+function updateClock(){
+  const pv = LIVE.metrics.pv_w, ld = LIVE.metrics.load_w;
+  clockEl.innerHTML = `gen <b>${pv===undefined?'—':pv+' W'}</b> · load <b>${ld===undefined?'—':ld+' W'}</b>`;
+}
+updateClock();
+
+/* ============================================================================
+   LOOP
+   ========================================================================== */
+const clock = new THREE.Clock();
+let scrollAccum = 0;
+
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const t = clock.elapsedTime;
+
+  // turbine spin (only meaningful when deployed)
+  if (mastGrp.visible) turbine.rotation.y += dt * 1.15;
+
+  // gentle idle sway so the coach does not look dead
+  coach.rotation.z = Math.sin(t*0.5) * 0.0016;
+  coach.position.y = Math.sin(t*0.7) * 0.035;
+
+  // shutter deploy/stow animation
+  for (const s of shutters){
+    if (s.target !== undefined && Math.abs(s.g.position.z - s.target) > 0.01){
+      s.g.position.z += (s.target - s.g.position.z) * Math.min(1, dt*3.2);
+    }
+  }
+
+  // energy pulses
+  if (flowOn){
+    for (const f of flows){
+      for (const b of f.beads){
+        b.t += dt * f.speed;
+        if (b.t > 1) b.t -= 1;
+        const d = b.t * f.total;
+        let seg = f.seg[0];
+        for (const s of f.seg){ if (d >= s.start) seg = s; }
+        const k = (d - seg.start) / seg.len;
+        b.mesh.position.lerpVectors(seg.a, seg.b, Math.max(0, Math.min(1, k)));
+      }
+    }
+  }
+
+  // camera flight
+  if (flight){
+    flight.k = Math.min(1, flight.k + dt * 1.35);
+    const e = 1 - Math.pow(1 - flight.k, 3);
+    camera.position.lerpVectors(flight.p0, flight.p1, e);
+    controls.target.lerpVectors(flight.t0, flight.t1, e);
+    if (flight.k >= 1) flight = null;
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+// expose a tiny API so the wiki/scripts can drive the panel
+window.Leviathan = { select, WIKI, scene, camera, controls,
+  setLive(d){ LIVE = Object.assign(LIVE, d); updateClock(); } };
+
+/* deep links — shareable URLs into a specific component or view:
+     ?open=bank           open a component's panel
+     ?view=basement       start in a focus view
+     ?mast=0&shutters=1&night=1   set the toggles
+*/
+const q = new URLSearchParams(location.search);
+if (q.get('view') && VIEWS[q.get('view')]){
+  const v = VIEWS[q.get('view')];
+  camera.position.set(...v.p); controls.target.set(...v.t);
+  if (q.get('view') === 'basement') basementGrp.visible = true;
+}
+if (q.get('mast') === '0'){ bMast.click(); }
+if (q.get('shutters') === '1'){ bShut.click(); }
+if (q.get('night') === '1'){ bDay.click(); }
+if (q.get('flow') === '0'){ bFlow.click(); }
+if (q.get('open')) select(q.get('open'));
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "_readme": [
+    "Optional live feed for the Leviathan panel. Drop values in and they appear in the",
+    "component panel and the top-right clock. Nothing here is required — with no live",
+    "data the panel shows the wiki envelope only, and every dashboard slot says 'no source'.",
+    "",
+    "metrics: any of soc, v_batt, pv_w, load_w, gpu_w, gpu_c, wan, soc_12v, genset, wind_w,",
+    "         wind_ms, cool_w, ac_in",
+    "dashboards: grafana / victron / proxmox URLs. Prefer the LOCAL addresses",
+    "            (Modbus/MQTT on the Cerbo GX, or the Proxmox host) over any cloud portal —",
+    "            a cloud dashboard stops working exactly when you need it.",
+    "",
+    "Generate this file from the rig's own poller. Starting point:",
+    "  Victron Cerbo GX -> local Modbus TCP or MQTT -> VictoriaMetrics -> Grafana",
+    "  Proxmox -> its API -> the same metrics store",
+    "",
+    "If the iframe stays blank, the target refused to be embedded; each dashboard slot has",
+    "an 'Open in new tab' link for that case."
+  ],
+  "metrics": {},
+  "dashboards": {}
+}
