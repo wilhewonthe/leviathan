@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leviathan Compute Revenue Mindmap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #020617;
+      --panel: rgba(15, 23, 42, 0.7);
+      --panel-strong: rgba(15, 23, 42, 0.9);
+      --border: #1e293b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --cyan: #22d3ee;
+      --green: #34d399;
+      --amber: #fbbf24;
+      --rose: #fb7185;
+      --violet: #a78bfa;
+      --gray: #64748b;
+      --shadow: rgba(34, 211, 238, 0.18);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .header {
+      margin-bottom: 1.5rem;
+    }
+
+    .header-row {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .pulse-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 12px rgba(34, 211, 238, 0.8);
+      animation: pulse 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.1); }
+    }
+
+    h1 {
+      font-size: clamp(1.35rem, 2vw, 1.8rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-left: 1.9rem;
+    }
+
+    .diagram-container {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      overflow-x: auto;
+      box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.05);
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      min-width: 1100px;
+      height: auto;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 0.8rem;
+      padding: 1.1rem 1.15rem;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .card-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .card-dot.cyan { background: var(--cyan); }
+    .card-dot.emerald { background: var(--green); }
+    .card-dot.violet { background: var(--violet); }
+    .card-dot.amber { background: var(--amber); }
+    .card-dot.rose { background: var(--rose); }
+
+    .card h3 {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .card ul {
+      list-style: none;
+      color: var(--muted);
+      font-size: 0.73rem;
+      line-height: 1.6;
+    }
+
+    .card li {
+      margin-bottom: 0.38rem;
+    }
+
+    .card strong {
+      color: var(--text);
+    }
+
+    .footer {
+      margin-top: 1.5rem;
+      text-align: center;
+      color: #475569;
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+    }
+
+    @media (max-width: 720px) {
+      body { padding: 1rem; }
+      .diagram-container { padding: 0.75rem; }
+      .subtitle { margin-left: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-row">
+        <div class="pulse-dot"></div>
+        <h1>Leviathan Compute Revenue Mindmap</h1>
+      </div>
+      <p class="subtitle">Quad-stream revenue architecture for off-grid GPU compute arbitrage</p>
+    </div>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1200 760" aria-label="Leviathan compute revenue model diagram" role="img">
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+          </marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+
+        <rect width="1200" height="760" fill="url(#grid)"/>
+
+        <!-- central hub -->
+        <ellipse cx="600" cy="385" rx="150" ry="58" fill="rgba(34, 211, 238, 0.12)" stroke="#22d3ee" stroke-width="2"/>
+        <text x="600" y="370" fill="#ffffff" font-size="14" font-weight="700" text-anchor="middle">Leviathan Compute</text>
+        <text x="600" y="392" fill="#ffffff" font-size="14" font-weight="700" text-anchor="middle">Revenue Model</text>
+        <text x="600" y="418" fill="#22d3ee" font-size="9" text-anchor="middle">Panic Responsibly™</text>
+
+        <!-- LEFT: REVENUE STREAMS -->
+        <ellipse cx="250" cy="170" rx="150" ry="90" fill="rgba(52, 211, 153, 0.08)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="250" y="100" fill="#34d399" font-size="11" font-weight="700" text-anchor="middle">QUAD-STREAM</text>
+        <text x="250" y="116" fill="#34d399" font-size="11" font-weight="700" text-anchor="middle">REVENUE</text>
+
+        <rect x="90" y="150" width="150" height="42" rx="8" fill="rgba(52, 211, 153, 0.15)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="165" y="175" fill="#ffffff" font-size="11" font-weight="700" text-anchor="middle">Passive Income</text>
+
+        <rect x="90" y="210" width="150" height="110" rx="8" fill="rgba(34, 211, 238, 0.10)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="165" y="232" fill="#22d3ee" font-size="10" font-weight="700" text-anchor="middle">GPU Compute Rack</text>
+        <text x="165" y="252" fill="#94a3b8" font-size="8" text-anchor="middle">RTX 4090 Cluster</text>
+        <text x="165" y="268" fill="#94a3b8" font-size="8" text-anchor="middle">Vast.ai</text>
+        <text x="165" y="284" fill="#94a3b8" font-size="8" text-anchor="middle">Render Network</text>
+        <text x="165" y="300" fill="#94a3b8" font-size="8" text-anchor="middle">Rent coverage 24/7</text>
+
+        <rect x="270" y="150" width="170" height="42" rx="8" fill="rgba(52, 211, 153, 0.15)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="355" y="175" fill="#ffffff" font-size="11" font-weight="700" text-anchor="middle">Active Manufacturing</text>
+
+        <rect x="270" y="210" width="170" height="140" rx="8" fill="rgba(251, 191, 36, 0.08)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="355" y="232" fill="#fbbf24" font-size="10" font-weight="700" text-anchor="middle">3D Printing</text>
+        <text x="355" y="252" fill="#94a3b8" font-size="8" text-anchor="middle">Formlabs Form 4</text>
+        <text x="355" y="268" fill="#94a3b8" font-size="8" text-anchor="middle">Medical-grade resin</text>
+        <text x="355" y="284" fill="#94a3b8" font-size="8" text-anchor="middle">Anatomical sovereignty</text>
+
+        <text x="355" y="306" fill="#fb7185" font-size="10" font-weight="700" text-anchor="middle">Laser Fabrication</text>
+        <text x="355" y="323" fill="#94a3b8" font-size="8" text-anchor="middle">xTool P2</text>
+        <text x="355" y="339" fill="#94a3b8" font-size="8" text-anchor="middle">Leather / acrylic / custom</text>
+
+        <rect x="285" y="380" width="170" height="64" rx="8" fill="rgba(167, 139, 250, 0.10)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="370" y="402" fill="#a78bfa" font-size="10" font-weight="700" text-anchor="middle">Vinyl Graphics</text>
+        <text x="370" y="420" fill="#94a3b8" font-size="8" text-anchor="middle">Graphtec cutter</text>
+        <text x="370" y="436" fill="#94a3b8" font-size="8" text-anchor="middle">Event decals / merch</text>
+
+        <!-- RIGHT: ENERGY ARBITRAGE -->
+        <ellipse cx="960" cy="170" rx="150" ry="90" fill="rgba(251, 191, 36, 0.08)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="960" y="100" fill="#fbbf24" font-size="11" font-weight="700" text-anchor="middle">GENERATION-LED</text>
+        <text x="960" y="116" fill="#fbbf24" font-size="11" font-weight="700" text-anchor="middle">(DUMP LOAD)</text>
+
+        <rect x="845" y="140" width="230" height="150" rx="8" fill="rgba(251, 191, 36, 0.08)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="960" y="162" fill="#fbbf24" font-size="11" font-weight="700" text-anchor="middle">Direction 1</text>
+        <text x="960" y="183" fill="#94a3b8" font-size="8" text-anchor="middle">Excess solar / wind → GPU</text>
+        <text x="960" y="203" fill="#94a3b8" font-size="8" text-anchor="middle">4h/day = 22.4 kWh</text>
+        <text x="960" y="223" fill="#94a3b8" font-size="8" text-anchor="middle">8h/day = 26.4 kWh</text>
+        <text x="960" y="243" fill="#94a3b8" font-size="8" text-anchor="middle">12-panel roof = 16.2 kWh</text>
+        <text x="960" y="263" fill="#94a3b8" font-size="8" text-anchor="middle">Deployables = 4–6 kWh</text>
+
+        <ellipse cx="960" cy="465" rx="150" ry="90" fill="rgba(251, 113, 133, 0.08)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="960" y="395" fill="#fb7185" font-size="11" font-weight="700" text-anchor="middle">PRICE-LED</text>
+        <text x="960" y="411" fill="#fb7185" font-size="11" font-weight="700" text-anchor="middle">(GRID ARBITRAGE)</text>
+
+        <rect x="845" y="430" width="230" height="150" rx="8" fill="rgba(251, 113, 133, 0.08)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="960" y="452" fill="#fb7185" font-size="11" font-weight="700" text-anchor="middle">Direction 2</text>
+        <text x="960" y="473" fill="#94a3b8" font-size="8" text-anchor="middle">Cheap grid power → GPU</text>
+        <text x="960" y="493" fill="#94a3b8" font-size="8" text-anchor="middle">Grid price &lt; $0.10/kWh</text>
+        <text x="960" y="513" fill="#94a3b8" font-size="8" text-anchor="middle">GPU revenue &gt; $0.50/kWh</text>
+        <text x="960" y="533" fill="#94a3b8" font-size="8" text-anchor="middle">Pedestal at near-zero marginal cost</text>
+        <text x="960" y="553" fill="#94a3b8" font-size="8" text-anchor="middle">Zero marginal kWh</text>
+
+        <ellipse cx="960" cy="660" rx="150" ry="90" fill="rgba(167, 139, 250, 0.08)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="960" y="595" fill="#a78bfa" font-size="11" font-weight="700" text-anchor="middle">NET-POSITIVE</text>
+        <text x="960" y="611" fill="#a78bfa" font-size="11" font-weight="700" text-anchor="middle">GATE</text>
+
+        <rect x="845" y="628" width="230" height="120" rx="8" fill="rgba(167, 139, 250, 0.10)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="960" y="650" fill="#94a3b8" font-size="8" text-anchor="middle">GPU revenue &gt; generation cost</text>
+        <text x="960" y="670" fill="#94a3b8" font-size="8" text-anchor="middle">GPU revenue &gt; grid price</text>
+        <text x="960" y="700" fill="#94a3b8" font-size="8" text-anchor="middle">Load fits generation window</text>
+        <text x="960" y="720" fill="#94a3b8" font-size="8" text-anchor="middle">No new GPU hardware debt</text>
+
+        <!-- LOWER LEFT: WORKLOAD ECONOMICS -->
+        <ellipse cx="220" cy="660" rx="150" ry="90" fill="rgba(34, 211, 238, 0.08)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="220" y="595" fill="#22d3ee" font-size="11" font-weight="700" text-anchor="middle">WORKLOAD</text>
+        <text x="220" y="611" fill="#22d3ee" font-size="11" font-weight="700" text-anchor="middle">ECONOMICS</text>
+
+        <rect x="70" y="630" width="155" height="140" rx="8" fill="rgba(34, 211, 238, 0.10)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="147" y="656" fill="#22d3ee" font-size="11" font-weight="700" text-anchor="middle">Training</text>
+        <text x="147" y="676" fill="#94a3b8" font-size="8" text-anchor="middle">High $/kWh</text>
+        <text x="147" y="692" fill="#94a3b8" font-size="8" text-anchor="middle">Bursty / seasonal</text>
+
+        <text x="147" y="716" fill="#22d3ee" font-size="11" font-weight="700" text-anchor="middle">Rendering</text>
+        <text x="147" y="736" fill="#94a3b8" font-size="8" text-anchor="middle">Steady / deadline-led</text>
+
+        <text x="147" y="760" fill="#22d3ee" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="hanging">Inference</text>
+        <text x="147" y="760" fill="#94a3b8" font-size="8" text-anchor="middle" dominant-baseline="hanging" dy="18">24/7, latency SLA</text>
+
+        <rect x="245" y="630" width="155" height="140" rx="8" fill="rgba(34, 211, 238, 0.10)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="322" y="656" fill="#22d3ee" font-size="11" font-weight="700" text-anchor="middle">Hashing</text>
+        <text x="322" y="676" fill="#94a3b8" font-size="8" text-anchor="middle">Crypto / commoditized</text>
+        <text x="322" y="696" fill="#94a3b8" font-size="8" text-anchor="middle">Match workload to</text>
+        <text x="322" y="716" fill="#94a3b8" font-size="8" text-anchor="middle">energy profile</text>
+
+        <!-- LOWER LEFT: POWER LEDGER -->
+        <ellipse cx="230" cy="465" rx="150" ry="90" fill="rgba(251, 113, 133, 0.08)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="230" y="395" fill="#fb7185" font-size="11" font-weight="700" text-anchor="middle">POWER LEDGER</text>
+        <text x="230" y="411" fill="#fb7185" font-size="11" font-weight="700" text-anchor="middle">REALITY CHECK</text>
+
+        <rect x="85" y="430" width="290" height="146" rx="8" fill="rgba(251, 113, 133, 0.08)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="230" y="452" fill="#fb7185" font-size="11" font-weight="700" text-anchor="middle">Baseline idle = 14.4 kWh/day</text>
+        <text x="230" y="474" fill="#94a3b8" font-size="8" text-anchor="middle">8×400W + wind = 11.55 kWh/day</text>
+        <text x="230" y="494" fill="#fb7185" font-size="8" font-weight="700" text-anchor="middle">Structural deficit at every cycle</text>
+        <text x="230" y="514" fill="#94a3b8" font-size="8" text-anchor="middle">Viable path: full roof 12×400W</text>
+        <text x="230" y="534" fill="#94a3b8" font-size="8" text-anchor="middle">+ deployables + throttling</text>
+        <text x="230" y="554" fill="#fb7185" font-size="8" font-weight="700" text-anchor="middle">Income vs hobby: UNPROVEN</text>
+
+        <!-- CONNECTORS -->
+        <line x1="450" y1="370" x2="250" y2="260" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <line x1="450" y1="385" x2="230" y2="430" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <line x1="450" y1="400" x2="230" y2="540" stroke="#fb7185" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <line x1="750" y1="370" x2="960" y2="260" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <line x1="750" y1="385" x2="960" y2="430" stroke="#fb7185" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <line x1="750" y1="400" x2="960" y2="628" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+        <!-- title -->
+        <text x="600" y="44" fill="#22d3ee" font-size="16" font-weight="700" text-anchor="middle">LEVIATHAN COMPUTE ARBITRAGE REVENUE MODEL</text>
+      </svg>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-dot emerald"></span>
+          <h3>Revenue architecture</h3>
+        </div>
+        <ul>
+          <li><strong>Passive income</strong> — GPU compute rack, Vast.ai, render networks, rent coverage</li>
+          <li><strong>Active manufacturing</strong> — 3D printing, laser fabrication, vinyl graphics</li>
+          <li><strong>Commercial mix</strong> — builds recurring and project-based revenue</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-dot amber"></span>
+          <h3>Energy arbitrage</h3>
+        </div>
+        <ul>
+          <li><strong>Generation-led</strong> — excess renewables become dump-load GPU demand</li>
+          <li><strong>Price-led</strong> — cheap grid power, then monetize GPU margin</li>
+          <li><strong>Rule</strong> — value only exists when generation and demand align</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-dot violet"></span>
+          <h3>Net-positive gate</h3>
+        </div>
+        <ul>
+          <li>GPU revenue must exceed generation cost</li>
+          <li>GPU revenue must beat grid price if arbitrage is used</li>
+          <li>Load must fit the generation window</li>
+          <li>No new GPU debt should be absorbed by the model</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-dot cyan"></span>
+          <h3>Workload fit</h3>
+        </div>
+        <ul>
+          <li><strong>Training</strong> — high $/kWh, bursty, higher margin</li>
+          <li><strong>Rendering</strong> — steady and deadline-driven</li>
+          <li><strong>Inference</strong> — always-on latency-sensitive workloads</li>
+          <li><strong>Hashing</strong> — more commoditized, needs careful matching</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-dot rose"></span>
+          <h3>Power ledger reality check</h3>
+        </div>
+        <ul>
+          <li>Baseline idle = 14.4 kWh/day</li>
+          <li>8×400W + wind = 11.55 kWh/day average</li>
+          <li>Structural deficit remains present at every cycle</li>
+          <li>Viable path = full roof + deployables + throttling</li>
+          <li><strong>Unproven</strong> — income vs hobby is still the core risk</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-dot amber"></span>
+          <h3>Key insight</h3>
+        </div>
+        <ul>
+          <li>Transcript-sized system was first modeled at ~5 kWh/day</li>
+          <li>Later load assumptions moved to ~38.4 kWh/day</li>
+          <li>Those two numbers remain unreconciled</li>
+          <li>Hardware is still sized to the first number while load is based on the second</li>
+          <li>Full roof utilization is the biggest available win</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer">
+      Leviathan Wiki — Operation Leviathan | Power Ledger &amp; Reality Check | panic-responsibly.com
+    </div>
+  </div>
+</body>
+</html>
+<!-- trigger build -->
